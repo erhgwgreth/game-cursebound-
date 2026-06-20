@@ -1,10 +1,10 @@
 {
-  "sigils": 804,
+  "sigils": 841,
   "bestScore": 57030,
   "bestFloor": 65,
-  "totalRuns": 53,
-  "totalKills": 645,
-  "totalCurses": 372,
+  "totalRuns": 55,
+  "totalKills": 797,
+  "totalCurses": 387,
   "unlockedIds": [
     "advanced_blessings",
     "advanced_curses",

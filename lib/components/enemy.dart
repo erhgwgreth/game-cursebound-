@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -76,6 +75,51 @@ class Enemy extends CircleComponent
   double _flashLeft = 0;
   Vector2 _knockbackVelocity = Vector2.zero();
   _EnemyTelegraph? _telegraph;
+  Sprite? _sprite;
+
+  // Visual size only — the body/hitbox radius (_radiusFor above) is
+  // untouched, so floating decorations in the art (Caster/Summoner orbs and
+  // magic circles) extend past the hitbox instead of being included in it.
+  static const double chargerSpriteSize = 64;
+  static const double casterSpriteSize = 52;
+  static const double bomberSpriteSize = 62;
+  static const double wardenSpriteSize = 70;
+  static const double hexerSpriteSize = 54;
+  static const double mirrorWraithSpriteSize = 52;
+  static const double artillerySpriteSize = 56;
+  static const double summonerSpriteSize = 58;
+  static const double splitterSpriteSize = 56;
+  static const double acolyteSpriteSize = 54;
+
+  String? get _spriteAsset {
+    return switch (kind) {
+      EnemyKind.charger => 'enemy_charger.png',
+      EnemyKind.caster => 'enemy_caster.png',
+      EnemyKind.bomber => 'enemy_bomber.png',
+      EnemyKind.warden => 'enemy_warden.png',
+      EnemyKind.hexer => 'enemy_hexer.png',
+      EnemyKind.mirrorWraith => 'enemy_mirror.png',
+      EnemyKind.artillery => 'enemy_artillery.png',
+      EnemyKind.summoner => 'enemy_summoner.png',
+      EnemyKind.splitter => 'enemy_splitter.png',
+      EnemyKind.acolyte => 'enemy_acolyte.png',
+    };
+  }
+
+  double get _spriteSize {
+    return switch (kind) {
+      EnemyKind.charger => chargerSpriteSize,
+      EnemyKind.caster => casterSpriteSize,
+      EnemyKind.bomber => bomberSpriteSize,
+      EnemyKind.warden => wardenSpriteSize,
+      EnemyKind.hexer => hexerSpriteSize,
+      EnemyKind.mirrorWraith => mirrorWraithSpriteSize,
+      EnemyKind.artillery => artillerySpriteSize,
+      EnemyKind.summoner => summonerSpriteSize,
+      EnemyKind.splitter => splitterSpriteSize,
+      EnemyKind.acolyte => acolyteSpriteSize,
+    };
+  }
 
   int get _level => game.gameState.floor;
 
@@ -117,8 +161,21 @@ class Enemy extends CircleComponent
     _maxHp = hp;
     _runicShieldReady = eliteModifier == EliteModifier.runicShield;
     _baseColor = paint.color;
+    final asset = _spriteAsset;
+    if (asset != null) {
+      _sprite = await _loadSpriteSafely(asset);
+    }
     add(CircleHitbox());
     _enterState(EnemyState.chase);
+  }
+
+  Future<Sprite?> _loadSpriteSafely(String path) async {
+    try {
+      return await game.loadSprite(path);
+    } on Object catch (error) {
+      debugPrint('Enemy sprite load failed ($path): $error');
+      return null;
+    }
   }
 
   @override
@@ -917,7 +974,17 @@ class Enemy extends CircleComponent
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+    } else {
+      final size = _spriteSize;
+      sprite.render(
+        canvas,
+        position: Vector2.all(radius - size / 2),
+        size: Vector2.all(size),
+      );
+    }
 
     if (eliteModifier != EliteModifier.none) {
       final auraPaint = Paint()
