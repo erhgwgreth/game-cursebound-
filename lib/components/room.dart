@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 
 import '../game/cursebound_game.dart';
 import '../data/balance.dart';
@@ -27,6 +28,9 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
 
   static final Vector2 roomSize = Vector2(900, 560);
   static const double wallThickness = 24;
+  static const double floorTileDrawSize = 128;
+  static const double wallTileDrawSize = 64;
+  static const double crackedFloorChance = 0.12;
 
   final int index;
   final RoomNode node;
@@ -34,6 +38,10 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
 
   int _aliveEnemies = 0;
   bool _isCleared = false;
+  Sprite? _floorSprite;
+  Sprite? _crackedFloorSprite;
+  Sprite? _wallSprite;
+  Sprite? _memoryFloorSprite;
 
   RoomType get type => node.type;
 
@@ -45,8 +53,15 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
   bool get isBossRoom => type == RoomType.boss;
 
   @override
+  void render(Canvas canvas) {
+    _renderFloor(canvas);
+    super.render(canvas);
+  }
+
+  @override
   Future<void> onLoad() async {
     await super.onLoad();
+    await _loadRoomTextures();
     _isCleared = node.cleared;
     _buildWalls();
     if (_isCleared) {
@@ -138,10 +153,26 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
     const t = wallThickness;
 
     addAll([
-      _Wall(position: Vector2(0, -h / 2 + t / 2), size: Vector2(w, t)),
-      _Wall(position: Vector2(0, h / 2 - t / 2), size: Vector2(w, t)),
-      _Wall(position: Vector2(-w / 2 + t / 2, 0), size: Vector2(t, h)),
-      _Wall(position: Vector2(w / 2 - t / 2, 0), size: Vector2(t, h)),
+      _Wall(
+        position: Vector2(0, -h / 2 + t / 2),
+        size: Vector2(w, t),
+        sprite: _wallSprite,
+      ),
+      _Wall(
+        position: Vector2(0, h / 2 - t / 2),
+        size: Vector2(w, t),
+        sprite: _wallSprite,
+      ),
+      _Wall(
+        position: Vector2(-w / 2 + t / 2, 0),
+        size: Vector2(t, h),
+        sprite: _wallSprite,
+      ),
+      _Wall(
+        position: Vector2(w / 2 - t / 2, 0),
+        size: Vector2(t, h),
+        sprite: _wallSprite,
+      ),
     ]);
 
     for (final direction in node.exits) {
@@ -152,6 +183,82 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
           roomSize: size,
         ),
       );
+    }
+  }
+
+  Future<void> _loadRoomTextures() async {
+    _floorSprite = await _loadSpriteSafely('floor.png');
+    _crackedFloorSprite = await _loadSpriteSafely('floor_cracked.png');
+    _wallSprite = await _loadSpriteSafely('wall.png');
+    if (type == RoomType.memory) {
+      _memoryFloorSprite = await _loadSpriteSafely('memory_floor.png');
+    }
+  }
+
+  Future<Sprite?> _loadSpriteSafely(String path) async {
+    try {
+      return await game.loadSprite(path);
+    } on Object catch (error) {
+      debugPrint('Room texture load failed ($path): $error');
+      return null;
+    }
+  }
+
+  void _renderFloor(Canvas canvas) {
+    final roomSize = scaledRoomSize;
+    final area = Rect.fromLTWH(
+      -roomSize.x / 2,
+      -roomSize.y / 2,
+      roomSize.x,
+      roomSize.y,
+    );
+    final memorySprite = type == RoomType.memory ? _memoryFloorSprite : null;
+    final sprite = memorySprite ?? _floorSprite;
+    if (sprite == null) {
+      canvas.drawRect(area, Paint()..color = const Color(0xFF10131A));
+      return;
+    }
+
+    _drawTiledSprite(
+      canvas: canvas,
+      sprite: sprite,
+      alternateSprite: memorySprite == null ? _crackedFloorSprite : null,
+      alternateChance: memorySprite == null ? crackedFloorChance : 0,
+      tileDrawSize: Vector2.all(floorTileDrawSize),
+      area: area,
+    );
+  }
+
+  void _drawTiledSprite({
+    required Canvas canvas,
+    required Sprite sprite,
+    required Rect area,
+    Sprite? alternateSprite,
+    double alternateChance = 0,
+    Vector2? tileDrawSize,
+  }) {
+    final tileSize = tileDrawSize ?? sprite.srcSize;
+    if (tileSize.x <= 0 || tileSize.y <= 0) {
+      return;
+    }
+    final random = _roomRandom();
+
+    for (var y = area.top; y < area.bottom; y += tileSize.y) {
+      for (var x = area.left; x < area.right; x += tileSize.x) {
+        final width = min(tileSize.x, area.right - x).toDouble();
+        final height = min(tileSize.y, area.bottom - y).toDouble();
+        if (width <= 0 || height <= 0) {
+          continue;
+        }
+        final tile =
+            alternateSprite != null && random.nextDouble() < alternateChance
+            ? alternateSprite
+            : sprite;
+        canvas.save();
+        canvas.clipRect(Rect.fromLTWH(x, y, width, height));
+        tile.render(canvas, position: Vector2(x, y), size: tileSize);
+        canvas.restore();
+      }
     }
   }
 
@@ -403,11 +510,42 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
 }
 
 class _Wall extends RectangleComponent {
-  _Wall({required super.position, required super.size})
+  _Wall({required super.position, required super.size, required this.sprite})
     : super(
         anchor: Anchor.center,
         paint: Paint()..color = const Color(0xFF181B25),
       );
+
+  final Sprite? sprite;
+
+  @override
+  void render(Canvas canvas) {
+    final tile = sprite;
+    if (tile == null) {
+      super.render(canvas);
+      return;
+    }
+
+    final drawSize = Vector2.all(Room.wallTileDrawSize);
+    if (drawSize.x <= 0 || drawSize.y <= 0) {
+      super.render(canvas);
+      return;
+    }
+
+    for (var y = 0.0; y < size.y; y += drawSize.y) {
+      for (var x = 0.0; x < size.x; x += drawSize.x) {
+        final width = min(drawSize.x, size.x - x).toDouble();
+        final height = min(drawSize.y, size.y - y).toDouble();
+        if (width <= 0 || height <= 0) {
+          continue;
+        }
+        canvas.save();
+        canvas.clipRect(Rect.fromLTWH(x, y, width, height));
+        tile.render(canvas, position: Vector2(x, y), size: drawSize);
+        canvas.restore();
+      }
+    }
+  }
 }
 
 class ExitDoor extends RectangleComponent
@@ -462,19 +600,61 @@ class ExitDoor extends RectangleComponent
   final Direction direction;
   bool _isOpen;
   bool _isTransitioning = false;
+  Sprite? _doorSprite;
 
-  static const double activationDepth = 104;
+  // clampPlayer() keeps the player Room.wallThickness + half-player-size away
+  // from the wall, which is closer to the wall than this distance can ever
+  // physically reach the door's own hitbox. So this proximity check is the
+  // real trigger; it must stay shallower than RoomManager's entry spawn
+  // inset (see _spawnPositionFor) or the player will spawn already inside
+  // it and bounce straight back through the door it just entered.
+  static const double activationDepth = 66;
   static const double activationWidth = 148;
+  static final Vector2 spriteSize = Vector2(124, 72);
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _doorSprite = await _loadDoorSprite();
     add(RectangleHitbox()..collisionType = CollisionType.passive);
   }
 
   void open() {
     _isOpen = true;
     paint.color = const Color(0xFFD7B84F);
+  }
+
+  Future<Sprite?> _loadDoorSprite() async {
+    try {
+      return await game.loadSprite('door.png');
+    } on Object catch (error) {
+      debugPrint('Door sprite load failed: $error');
+      return null;
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _doorSprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    canvas.save();
+    canvas.translate(size.x / 2, size.y / 2);
+    canvas.rotate(_spriteAngleForDirection(direction));
+    sprite.render(canvas, position: -spriteSize / 2, size: spriteSize);
+    canvas.restore();
+  }
+
+  double _spriteAngleForDirection(Direction direction) {
+    return switch (direction) {
+      Direction.down => pi,
+      Direction.up => 0,
+      Direction.left => -pi / 2,
+      Direction.right => pi / 2,
+    };
   }
 
   @override

@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 
 import '../data/balance.dart';
 import '../game/cursebound_game.dart';
@@ -14,11 +15,20 @@ class MiniBoss extends CircleComponent
     : super(
         radius: 34,
         anchor: Anchor.center,
+        // Sprite is rendered larger than this hitbox (see spriteSize), so
+        // keep an explicit low priority within the room so the player and
+        // projectiles (default priority) always draw on top of it.
+        priority: -1,
         paint: Paint()..color = const Color(0xFF8E445A),
       );
 
   static const int baseHp = 135;
   static const int contactDamage = 14;
+
+  // Visual size only — the body/hitbox radius above stays 34 for collision.
+  // Decorative edges of the sprite (claw tips, spines) intentionally extend
+  // past the hitbox.
+  static const double spriteSize = 150;
 
   final void Function() onDeath;
 
@@ -33,6 +43,7 @@ class MiniBoss extends CircleComponent
   Vector2 _slamDirection = Vector2.zero();
   Vector2 _knockbackVelocity = Vector2.zero();
   Color _baseColor = const Color(0xFF8E445A);
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
@@ -47,7 +58,35 @@ class MiniBoss extends CircleComponent
             .round();
     hp = maxHp;
     _baseColor = paint.color;
+    _sprite = await _loadSpriteSafely('miniboss.png');
     add(CircleHitbox());
+  }
+
+  Future<Sprite?> _loadSpriteSafely(String path) async {
+    try {
+      return await game.loadSprite(path);
+    } on Object catch (error) {
+      debugPrint('MiniBoss sprite load failed ($path): $error');
+      return null;
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    final fadePaint = Paint()
+      ..color = Color.fromRGBO(255, 255, 255, opacity.clamp(0.0, 1.0));
+    sprite.render(
+      canvas,
+      position: Vector2.all(radius - spriteSize / 2),
+      size: Vector2.all(spriteSize),
+      overridePaint: fadePaint,
+    );
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 
 import '../game/cursebound_game.dart';
 
@@ -14,12 +15,40 @@ class Altar extends CircleComponent
         paint: Paint()..color = const Color(0xFFE5C85A),
       );
 
+  static const double spriteSize = 168;
+
   bool _isActivated = false;
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _sprite = await _loadSpriteSafely('altar_contract.png');
     add(CircleHitbox()..collisionType = CollisionType.passive);
+  }
+
+  Future<Sprite?> _loadSpriteSafely(String path) async {
+    try {
+      return await game.loadSprite(path);
+    } on Object catch (error) {
+      debugPrint('Altar sprite load failed ($path): $error');
+      return null;
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    sprite.render(
+      canvas,
+      position: Vector2.all(radius - spriteSize / 2),
+      size: Vector2.all(spriteSize),
+    );
   }
 
   @override

@@ -244,8 +244,12 @@ class RoomManager extends Component with HasGameReference<CurseboundGame> {
       };
     }
 
-    final horizontal = size.width / 2 - 92;
-    final vertical = size.height / 2 - 82;
+    // Must stay outside ExitDoor.activationDepth (measured from the door,
+    // which sits Room.wallThickness / 2 inside the wall) or the player
+    // spawns already inside the new room's entry-door trigger zone and
+    // immediately bounces back through it.
+    final horizontal = size.width / 2 - 130;
+    final vertical = size.height / 2 - 130;
     return switch (entryDirection) {
       Direction.left => Vector2(-horizontal, 0),
       Direction.right => Vector2(horizontal, 0),

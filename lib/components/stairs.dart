@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 
 import '../game/cursebound_game.dart';
 
@@ -23,13 +24,26 @@ class Stairs extends RectangleComponent
         paint: Paint()..color = const Color(0xFF8FA1C7),
       );
 
+  static const double spriteSize = 168;
+
   final bool isUp;
   double _useCooldownLeft = 0;
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _sprite = await _loadSpriteSafely('stairs.png');
     add(RectangleHitbox()..collisionType = CollisionType.passive);
+  }
+
+  Future<Sprite?> _loadSpriteSafely(String path) async {
+    try {
+      return await game.loadSprite(path);
+    } on Object catch (error) {
+      debugPrint('Stairs sprite load failed ($path): $error');
+      return null;
+    }
   }
 
   @override
@@ -40,16 +54,26 @@ class Stairs extends RectangleComponent
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
 
-    final linePaint = Paint()
-      ..color = const Color(0xFF08090D)
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
-    for (var i = 0; i < 3; i += 1) {
-      final y = 12.0 + i * 9;
-      canvas.drawLine(Offset(10, y), Offset(size.x - 10, y), linePaint);
+      final linePaint = Paint()
+        ..color = const Color(0xFF08090D)
+        ..strokeWidth = 4
+        ..style = PaintingStyle.stroke;
+      for (var i = 0; i < 3; i += 1) {
+        final y = 12.0 + i * 9;
+        canvas.drawLine(Offset(10, y), Offset(size.x - 10, y), linePaint);
+      }
+      return;
     }
+
+    sprite.render(
+      canvas,
+      position: size / 2 - Vector2.all(spriteSize / 2),
+      size: Vector2.all(spriteSize),
+    );
   }
 
   @override

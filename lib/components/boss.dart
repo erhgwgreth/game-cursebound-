@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 
 import 'effects.dart';
 import 'enemy.dart';
@@ -37,6 +38,14 @@ extension BossArchetypeInfo on BossArchetype {
       BossArchetype.covenantHost => const Color(0xFF6F6341),
     };
   }
+
+  String get spriteAsset {
+    return switch (this) {
+      BossArchetype.crimsonVanguard => 'boss_vanguard.png',
+      BossArchetype.voidMaw => 'boss_voidmaw.png',
+      BossArchetype.covenantHost => 'boss_covenant.png',
+    };
+  }
 }
 
 class BossPattern {
@@ -59,11 +68,23 @@ class Boss extends CircleComponent
     : super(
         radius: 42,
         anchor: Anchor.center,
+        // Sprite is rendered much larger than this hitbox (see _spriteSize),
+        // so keep an explicit low priority within the room so the player
+        // and projectiles (default priority) always draw on top of it.
+        priority: -1,
         paint: Paint()..color = const Color(0xFF6F5661),
       );
 
   static const int baseHp = 240;
   static const int contactDamage = 18;
+
+  // Visual size only (the body/hitbox radius above stays 42 for collision
+  // and the room-bounds math elsewhere that reads `radius`). Decorative
+  // edges of each sprite (runes, fragments, tendril tips) intentionally
+  // extend past the hitbox.
+  static const double crimsonVanguardSpriteSize = 220;
+  static const double voidMawSpriteSize = 240;
+  static const double covenantHostSpriteSize = 230;
 
   final void Function() onDeath;
 
@@ -94,6 +115,13 @@ class Boss extends CircleComponent
   Vector2 _ricochetVelocity = Vector2.zero();
   Vector2 _knockbackVelocity = Vector2.zero();
   late BossArchetype _archetype;
+  Sprite? _sprite;
+
+  double get _spriteSize => switch (_archetype) {
+    BossArchetype.crimsonVanguard => crimsonVanguardSpriteSize,
+    BossArchetype.voidMaw => voidMawSpriteSize,
+    BossArchetype.covenantHost => covenantHostSpriteSize,
+  };
 
   static const List<BossPattern> allPatterns = [
     BossPattern(
@@ -132,6 +160,7 @@ class Boss extends CircleComponent
     _archetype = _selectArchetype(game.gameState.floor);
     _baseColor = _archetype.color;
     paint.color = _baseColor;
+    _sprite = await _loadSpriteSafely(_archetype.spriteAsset);
     maxHp =
         (baseHp *
                 Balance.enemyHealthScale(
@@ -142,6 +171,34 @@ class Boss extends CircleComponent
             .round();
     hp = maxHp;
     add(CircleHitbox());
+  }
+
+  Future<Sprite?> _loadSpriteSafely(String path) async {
+    try {
+      return await game.loadSprite(path);
+    } on Object catch (error) {
+      debugPrint('Boss sprite load failed ($path): $error');
+      return null;
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    final size = _spriteSize;
+    final fadePaint = Paint()
+      ..color = Color.fromRGBO(255, 255, 255, opacity.clamp(0.0, 1.0));
+    sprite.render(
+      canvas,
+      position: Vector2.all(radius - size / 2),
+      size: Vector2.all(size),
+      overridePaint: fadePaint,
+    );
   }
 
   @override
