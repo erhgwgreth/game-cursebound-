@@ -8,6 +8,9 @@ import '../components/offscreen_threat.dart';
 import '../data/dungeon_map.dart';
 import '../data/room_type.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
+import 'app_text.dart';
+import 'localized_game_text.dart';
 
 class HudOverlay extends StatelessWidget {
   const HudOverlay({required this.game, super.key});
@@ -17,9 +20,13 @@ class HudOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: game.gameState,
+      animation: Listenable.merge([
+        game.gameState,
+        LocalizationService.instance,
+      ]),
       builder: (context, _) {
         final state = game.gameState;
+        final loc = LocalizationService.instance;
         final curseCount = state.curses.length;
         final hasConflict = state.buildReport.conflicts.isNotEmpty;
         final hasSynergy = state.buildReport.synergies.isNotEmpty;
@@ -64,7 +71,7 @@ class HudOverlay extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'HP ${state.hp}/${state.maxHp}   Essence ${state.essence}   Floor ${state.floor}   Room ${state.room} ${state.roomType.label}   Kills ${state.kills}',
+                            '${loc.tr('ui.stat.hp')} ${state.hp}/${state.maxHp}   ${loc.tr('ui.hud.essence')} ${state.essence}   ${loc.tr('ui.hud.floor')} ${state.floor}   ${loc.tr('ui.hud.room')} ${state.room} ${localizedRoomType(state.roomType)}   ${loc.tr('ui.hud.kills')} ${state.kills}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -73,7 +80,7 @@ class HudOverlay extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Curses ${state.curses.length}   DMG ${state.stats.attackDamage.toStringAsFixed(0)}   ASPD ${state.stats.attackSpeed.toStringAsFixed(2)}',
+                            '${loc.tr('ui.hud.curses')} ${state.curses.length}   ${loc.tr('ui.stat.damage')} ${state.stats.attackDamage.toStringAsFixed(0)}   ${loc.tr('ui.stat.attack_speed')} ${state.stats.attackSpeed.toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
@@ -83,7 +90,7 @@ class HudOverlay extends StatelessWidget {
                           if (state.relic != null) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Relic ${state.relic!.name}',
+                              '${loc.tr('ui.hud.relic')} ${localizedModifierName(state.relic!)}',
                               style: const TextStyle(
                                 color: Color(0xFFD7B84F),
                                 fontSize: 13,
@@ -94,7 +101,13 @@ class HudOverlay extends StatelessWidget {
                           if (state.bossFavorActive) ...[
                             const SizedBox(height: 4),
                             Text(
-                              'Boss Favor active: essence x${state.bossFavorEssenceMultiplier.toStringAsFixed(1)} until you take stairs',
+                              loc.tr(
+                                'ui.hud.boss_favor',
+                                params: {
+                                  'multiplier': state.bossFavorEssenceMultiplier
+                                      .toStringAsFixed(1),
+                                },
+                              ),
                               style: const TextStyle(
                                 color: Color(0xFFD7B84F),
                                 fontSize: 13,
@@ -106,8 +119,8 @@ class HudOverlay extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               state.revivalUsed
-                                  ? 'Revival spent'
-                                  : 'Revival ready: half HP + random curse on death',
+                                  ? loc.tr('ui.hud.revival_spent')
+                                  : loc.tr('ui.hud.revival_ready'),
                               style: TextStyle(
                                 color: state.revivalUsed
                                     ? Colors.white38
@@ -119,7 +132,17 @@ class HudOverlay extends StatelessWidget {
                           ],
                           const SizedBox(height: 4),
                           Text(
-                            'Juice ${game.juice.settings.enabled ? "ON" : "OFF"}   Shake ${game.juice.settings.screenShakeEnabled ? "ON" : "OFF"}   Tab/B Build   Esc Pause',
+                            loc.tr(
+                              'ui.hud.controls',
+                              params: {
+                                'juice': game.juice.settings.enabled
+                                    ? 'ON'
+                                    : 'OFF',
+                                'shake': game.juice.settings.screenShakeEnabled
+                                    ? 'ON'
+                                    : 'OFF',
+                              },
+                            ),
                             style: const TextStyle(
                               color: Colors.white38,
                               fontSize: 12,
@@ -135,7 +158,7 @@ class HudOverlay extends StatelessWidget {
                                 for (final synergy
                                     in state.buildReport.synergies)
                                   _BuildChip(
-                                    label: synergy.name,
+                                    label: localizedSynergyName(synergy),
                                     color: const Color(0xFFD7B84F),
                                   ),
                               ],
@@ -151,7 +174,7 @@ class HudOverlay extends StatelessWidget {
                                     in state.buildReport.conflicts)
                                   _BuildChip(
                                     label:
-                                        '${conflict.name} x${state.buildReport.scoreMultiplier.toStringAsFixed(1)} score',
+                                        '${localizedConflictName(conflict)} x${state.buildReport.scoreMultiplier.toStringAsFixed(1)} ${loc.tr('ui.stat.score')}',
                                     color: const Color(0xFFB11238),
                                   ),
                               ],
@@ -159,8 +182,8 @@ class HudOverlay extends StatelessWidget {
                           ],
                           if (state.isBossRoom && !state.isRoomCleared) ...[
                             const SizedBox(height: 8),
-                            const Text(
-                              'Boss room. The boss attacks faster as curses pile up.',
+                            Text(
+                              loc.tr('ui.hud.boss_room'),
                               style: TextStyle(
                                 color: Color(0xFFFF5A76),
                                 fontSize: 14,
@@ -170,8 +193,8 @@ class HudOverlay extends StatelessWidget {
                           ],
                           if (state.isRoomCleared) ...[
                             const SizedBox(height: 8),
-                            const Text(
-                              'Room cleared. Touch the altar for a pact, then use an open door.',
+                            Text(
+                              loc.tr('ui.hud.room_cleared'),
                               style: TextStyle(
                                 color: Color(0xFFD7B84F),
                                 fontSize: 14,
@@ -179,11 +202,23 @@ class HudOverlay extends StatelessWidget {
                               ),
                             ),
                           ],
+                          if (game.nearbyInscriptionFragment != null &&
+                              !game.isInscriptionOpen) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              loc.tr('ui.inscription.prompt'),
+                              style: const TextStyle(
+                                color: Color(0xFFD7B84F),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
                           if (state.isGameOver) ...[
                             const SizedBox(height: 8),
-                            const Text(
-                              'Dead. Result screen arrives in Phase 6.',
-                              style: TextStyle(
+                            Text(
+                              loc.tr('ui.status.dead_phase'),
+                              style: const TextStyle(
                                 color: Color(0xFFFF5A76),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -535,6 +570,7 @@ class _MiniMapPainter extends CustomPainter {
       text: TextSpan(
         text: label,
         style: TextStyle(
+          fontFamily: AppText.fontFamily,
           color: const Color(0xFF08090D),
           fontSize: cell * 0.42,
           fontWeight: FontWeight.w900,
@@ -557,7 +593,8 @@ class _MiniMapPainter extends CustomPainter {
       RoomType.challenge => const Color(0xFFB11238),
       RoomType.merchant ||
       RoomType.offering ||
-      RoomType.upstairs => const Color(0xFF8FA1C7),
+      RoomType.upstairs ||
+      RoomType.memory => const Color(0xFF8FA1C7),
       RoomType.boss => const Color(0xFFD7B84F),
     };
   }
@@ -573,6 +610,7 @@ class _MiniMapPainter extends CustomPainter {
       RoomType.merchant => 'O',
       RoomType.offering => 'O',
       RoomType.upstairs => 'U',
+      RoomType.memory => 'R',
       RoomType.boss => 'B',
     };
   }

@@ -122,6 +122,7 @@ class _RouteCard extends StatelessWidget {
       RoomType.merchant => const Color(0xFF8FA1C7),
       RoomType.offering => const Color(0xFFD7B84F),
       RoomType.upstairs => const Color(0xFF8FA1C7),
+      RoomType.memory => const Color(0xFF8FA1C7),
       RoomType.boss => const Color(0xFFD7B84F),
     };
   }

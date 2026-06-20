@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../data/balance.dart';
 import '../data/relic.dart';
+import '../data/story_fragment.dart';
 
 class MetaUnlock {
   const MetaUnlock({
@@ -148,6 +149,7 @@ class MetaProgress extends ChangeNotifier {
   int totalKills = 0;
   int totalCurses = 0;
   final Set<String> unlockedIds = {};
+  final Set<String> revealedStoryFragmentIds = {};
   final Map<String, int> upgradeLevels = {};
 
   bool _isLoaded = false;
@@ -232,6 +234,23 @@ class MetaProgress extends ChangeNotifier {
 
   bool get revivalUnlocked => isUnlocked('one_revival');
 
+  List<StoryFragment> get revealedStoryFragments {
+    final fragments = storyFragmentTable
+        .where((fragment) => revealedStoryFragmentIds.contains(fragment.id))
+        .toList();
+    fragments.sort((a, b) => a.order.compareTo(b.order));
+    return fragments;
+  }
+
+  StoryFragment? get nextMemoryFragment {
+    for (final fragment in memoryFragments) {
+      if (!revealedStoryFragmentIds.contains(fragment.id)) {
+        return fragment;
+      }
+    }
+    return null;
+  }
+
   Future<void> load() async {
     try {
       final file = _saveFile;
@@ -249,6 +268,12 @@ class MetaProgress extends ChangeNotifier {
             unlockedIds
               ..clear()
               ..addAll(unlocked.whereType<String>());
+          }
+          final revealedFragments = json['revealedStoryFragmentIds'];
+          if (revealedFragments is List) {
+            revealedStoryFragmentIds
+              ..clear()
+              ..addAll(revealedFragments.whereType<String>());
           }
           final levels = json['upgradeLevels'];
           if (levels is Map) {
@@ -405,6 +430,20 @@ class MetaProgress extends ChangeNotifier {
     save();
   }
 
+  Future<bool> revealStoryFragment(String id) async {
+    if (!storyFragmentTable.any((fragment) => fragment.id == id)) {
+      return false;
+    }
+    final added = revealedStoryFragmentIds.add(id);
+    if (!added) {
+      return false;
+    }
+
+    notifyListeners();
+    await save();
+    return true;
+  }
+
   int _sigilsForRun({
     required int floor,
     required int room,
@@ -431,6 +470,7 @@ class MetaProgress extends ChangeNotifier {
         'totalKills': totalKills,
         'totalCurses': totalCurses,
         'unlockedIds': unlockedIds.toList()..sort(),
+        'revealedStoryFragmentIds': revealedStoryFragmentIds.toList()..sort(),
         'upgradeLevels': Map<String, int>.from(upgradeLevels),
       });
       await _saveFile.writeAsString(payload);

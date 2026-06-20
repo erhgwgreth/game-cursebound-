@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../data/game_modifier.dart';
-import '../data/room_type.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
+import 'localized_game_text.dart';
 
 class PauseOverlay extends StatefulWidget {
   const PauseOverlay({required this.game, super.key});
@@ -20,6 +21,7 @@ class _PauseOverlayState extends State<PauseOverlay> {
     final state = game.gameState;
     final stats = state.stats;
     final juice = game.juice.settings;
+    final loc = LocalizationService.instance;
     final blessingStacks = _groupModifiers(state.blessings);
     final curseStacks = _groupModifiers(state.curses);
 
@@ -41,10 +43,10 @@ class _PauseOverlayState extends State<PauseOverlay> {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Run Details',
-                          style: TextStyle(
+                          loc.tr('ui.pause.title'),
+                          style: const TextStyle(
                             color: Color(0xFFD7B84F),
                             fontSize: 30,
                             fontWeight: FontWeight.w900,
@@ -52,7 +54,7 @@ class _PauseOverlayState extends State<PauseOverlay> {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Resume',
+                        tooltip: loc.tr('ui.action.resume'),
                         onPressed: game.closePauseMenu,
                         icon: const Icon(Icons.close),
                         color: Colors.white70,
@@ -71,87 +73,105 @@ class _PauseOverlayState extends State<PauseOverlay> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 _Section(
-                                  title: 'Stats',
+                                  title: loc.tr('ui.section.stats'),
                                   color: const Color(0xFFD7B84F),
                                   children: [
                                     _StatRow(
-                                      'HP',
+                                      loc.tr('ui.stat.hp'),
                                       '${state.hp}/${state.maxHp}',
                                     ),
                                     _StatRow(
-                                      'Max HP',
+                                      loc.tr('ui.stat.max_hp'),
                                       stats.maxHp.toStringAsFixed(0),
                                     ),
                                     _StatRow(
-                                      'Move Speed',
+                                      loc.tr('ui.stat.move_speed'),
                                       stats.moveSpeed.toStringAsFixed(0),
                                     ),
                                     _StatRow(
-                                      'Attack Damage',
+                                      loc.tr('ui.stat.attack_damage'),
                                       stats.attackDamage.toStringAsFixed(0),
                                     ),
                                     _StatRow(
-                                      'Attack Speed',
+                                      loc.tr('ui.stat.attack_speed'),
                                       stats.attackSpeed.toStringAsFixed(2),
                                     ),
                                     _StatRow(
-                                      'Dash Distance',
+                                      loc.tr('ui.stat.dash_distance'),
                                       stats.dashDistance.toStringAsFixed(0),
                                     ),
                                     _StatRow(
-                                      'Dash Cooldown',
+                                      loc.tr('ui.stat.dash_cooldown'),
                                       '${stats.dashCooldown.toStringAsFixed(2)}s',
                                     ),
                                     _StatRow(
-                                      'Projectile Speed',
+                                      loc.tr('ui.stat.projectile_speed'),
                                       stats.projectileSpeed.toStringAsFixed(0),
                                     ),
                                     _StatRow(
-                                      'Projectile Size',
+                                      loc.tr('ui.stat.projectile_size'),
                                       stats.projectileRadius.toStringAsFixed(1),
                                     ),
                                     _StatRow(
-                                      'Critical',
+                                      loc.tr('ui.stat.critical'),
                                       '${(stats.criticalChance * 100).round()}%',
                                     ),
                                     _StatRow(
-                                      'Healing',
+                                      loc.tr('ui.stat.healing'),
                                       '${(stats.healingMultiplier * 100).round()}%',
                                     ),
                                     _StatRow(
-                                      'Damage Taken',
+                                      loc.tr('ui.stat.damage_taken'),
                                       '${(stats.damageTakenMultiplier * 100).round()}%',
                                     ),
                                     _StatRow(
-                                      'Enemy HP',
+                                      loc.tr('ui.stat.enemy_hp'),
                                       '${(stats.enemyHealthMultiplier * 100).round()}%',
                                     ),
                                     _StatRow(
-                                      'Heal On Kill',
+                                      loc.tr('ui.stat.heal_on_kill'),
                                       '${stats.healOnKill}',
                                     ),
                                   ],
                                 ),
                                 _Section(
-                                  title: 'Run',
+                                  title: loc.tr('ui.section.run'),
                                   color: const Color(0xFF8FA1C7),
                                   children: [
-                                    _StatRow('Current Floor', '${state.floor}'),
                                     _StatRow(
-                                      'Highest Floor',
+                                      loc.tr('ui.stat.current_floor'),
+                                      '${state.floor}',
+                                    ),
+                                    _StatRow(
+                                      loc.tr('ui.stat.highest_floor'),
                                       '${state.maxFloorReached}',
                                     ),
-                                    _StatRow('Room Visits', '${state.room}'),
-                                    _StatRow('Room Type', state.roomType.label),
-                                    _StatRow('Kills', '${state.kills}'),
-                                    _StatRow('Essence', '${state.essence}'),
                                     _StatRow(
-                                      'Sigils',
+                                      loc.tr('ui.stat.room_visits'),
+                                      '${state.room}',
+                                    ),
+                                    _StatRow(
+                                      loc.tr('ui.stat.room_type'),
+                                      localizedRoomType(state.roomType),
+                                    ),
+                                    _StatRow(
+                                      loc.tr('ui.stat.kills'),
+                                      '${state.kills}',
+                                    ),
+                                    _StatRow(
+                                      loc.tr('ui.stat.essence'),
+                                      '${state.essence}',
+                                    ),
+                                    _StatRow(
+                                      loc.tr('ui.stat.sigils'),
                                       '${game.metaProgress.sigils}',
                                     ),
-                                    _StatRow('Score', '${state.score}'),
                                     _StatRow(
-                                      'Elapsed',
+                                      loc.tr('ui.stat.score'),
+                                      '${state.score}',
+                                    ),
+                                    _StatRow(
+                                      loc.tr('ui.stat.elapsed'),
                                       _formatTime(game.runElapsedSeconds),
                                     ),
                                   ],
@@ -168,87 +188,107 @@ class _PauseOverlayState extends State<PauseOverlay> {
                               children: [
                                 if (state.relic != null)
                                   _Section(
-                                    title: 'Relic',
+                                    title: loc.tr('ui.section.relic'),
                                     color: const Color(0xFFD7B84F),
                                     children: [
                                       _ModifierCard(
-                                        name: state.relic!.name,
-                                        description: state.relic!.description,
+                                        name: localizedModifierName(
+                                          state.relic!,
+                                        ),
+                                        description:
+                                            localizedModifierDescription(
+                                              state.relic!,
+                                            ),
                                         tags: state.relic!.tags,
                                         color: const Color(0xFFD7B84F),
                                       ),
                                     ],
                                   ),
                                 _Section(
-                                  title: 'Boss Boons',
+                                  title: loc.tr('ui.section.boss_boons'),
                                   color: const Color(0xFFD7B84F),
-                                  emptyText: 'No boss boons yet.',
+                                  emptyText: loc.tr('ui.empty.boss_boons'),
                                   children: [
                                     for (final stack in _groupModifiers(
                                       state.bossBoons,
                                     ))
                                       _ModifierCard(
                                         name: stack.displayName,
-                                        description: stack.modifier.description,
+                                        description:
+                                            localizedModifierDescription(
+                                              stack.modifier,
+                                            ),
                                         tags: stack.modifier.tags,
                                         color: const Color(0xFFD7B84F),
                                       ),
                                   ],
                                 ),
                                 _Section(
-                                  title: 'Blessings',
+                                  title: loc.tr('ui.section.blessings'),
                                   color: const Color(0xFFD7B84F),
-                                  emptyText: 'No blessings yet.',
+                                  emptyText: loc.tr('ui.empty.blessings'),
                                   children: [
                                     for (final stack in blessingStacks)
                                       _ModifierCard(
                                         name: stack.displayName,
-                                        description: stack.modifier.description,
+                                        description:
+                                            localizedModifierDescription(
+                                              stack.modifier,
+                                            ),
                                         tags: stack.modifier.tags,
                                         color: const Color(0xFFD7B84F),
                                       ),
                                   ],
                                 ),
                                 _Section(
-                                  title: 'Curses',
+                                  title: loc.tr('ui.section.curses'),
                                   color: const Color(0xFFB11238),
-                                  emptyText: 'No curses yet.',
+                                  emptyText: loc.tr('ui.empty.curses'),
                                   children: [
                                     for (final stack in curseStacks)
                                       _ModifierCard(
                                         name: stack.displayName,
-                                        description: stack.modifier.description,
+                                        description:
+                                            localizedModifierDescription(
+                                              stack.modifier,
+                                            ),
                                         tags: stack.modifier.tags,
                                         color: const Color(0xFFB11238),
                                       ),
                                   ],
                                 ),
                                 _Section(
-                                  title: 'Synergies',
+                                  title: loc.tr('ui.section.synergies'),
                                   color: const Color(0xFFD7B84F),
-                                  emptyText: 'No active synergies.',
+                                  emptyText: loc.tr('ui.empty.synergies'),
                                   children: [
                                     for (final synergy
                                         in state.buildReport.synergies)
                                       _InfoCard(
-                                        name: synergy.name,
-                                        description: synergy.description,
+                                        name: localizedSynergyName(synergy),
+                                        description:
+                                            localizedSynergyDescription(
+                                              synergy,
+                                            ),
                                         color: const Color(0xFFD7B84F),
                                       ),
                                   ],
                                 ),
                                 _Section(
                                   title:
-                                      'Conflicts x${state.buildReport.scoreMultiplier.toStringAsFixed(2)} score',
+                                      '${loc.tr('ui.section.conflicts')} x${state.buildReport.scoreMultiplier.toStringAsFixed(2)} ${loc.tr('ui.stat.score')}',
                                   color: const Color(0xFFFF5A76),
-                                  emptyText: 'No active conflicts.',
+                                  emptyText: loc.tr('ui.empty.conflicts'),
                                   children: [
                                     for (final conflict
                                         in state.buildReport.conflicts)
                                       _InfoCard(
                                         name:
-                                            '${conflict.name} +${(conflict.scoreMultiplierBonus * 100).round()}%',
-                                        description: conflict.description,
+                                            '${localizedConflictName(conflict)} +${(conflict.scoreMultiplierBonus * 100).round()}%',
+                                        description:
+                                            localizedConflictDescription(
+                                              conflict,
+                                            ),
                                         color: const Color(0xFFFF5A76),
                                       ),
                                   ],
@@ -265,13 +305,55 @@ class _PauseOverlayState extends State<PauseOverlay> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 _Section(
-                                  title: 'Settings',
+                                  title: loc.tr('ui.section.settings'),
                                   color: const Color(0xFFD7B84F),
                                   children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            loc.tr('ui.settings.language'),
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                        DropdownButton<AppLocale>(
+                                          value: loc.locale,
+                                          dropdownColor: const Color(
+                                            0xFF12141C,
+                                          ),
+                                          items: [
+                                            DropdownMenuItem(
+                                              value: AppLocale.en,
+                                              child: Text(
+                                                loc.tr('ui.settings.english'),
+                                              ),
+                                            ),
+                                            DropdownMenuItem(
+                                              value: AppLocale.ko,
+                                              child: Text(
+                                                loc.tr('ui.settings.korean'),
+                                              ),
+                                            ),
+                                          ],
+                                          onChanged: (locale) {
+                                            if (locale == null) {
+                                              return;
+                                            }
+                                            loc.setLocale(locale);
+                                            setState(() {});
+                                          },
+                                        ),
+                                      ],
+                                    ),
                                     SwitchListTile(
                                       contentPadding: EdgeInsets.zero,
                                       value: juice.enabled,
-                                      title: const Text('Combat feedback'),
+                                      title: Text(
+                                        loc.tr('ui.settings.combat_feedback'),
+                                      ),
                                       activeThumbColor: const Color(0xFFD7B84F),
                                       onChanged: (value) {
                                         setState(() => juice.enabled = value);
@@ -280,7 +362,9 @@ class _PauseOverlayState extends State<PauseOverlay> {
                                     SwitchListTile(
                                       contentPadding: EdgeInsets.zero,
                                       value: juice.screenShakeEnabled,
-                                      title: const Text('Screen shake'),
+                                      title: Text(
+                                        loc.tr('ui.settings.screen_shake'),
+                                      ),
                                       activeThumbColor: const Color(0xFFD7B84F),
                                       onChanged: (value) {
                                         setState(
@@ -290,7 +374,7 @@ class _PauseOverlayState extends State<PauseOverlay> {
                                       },
                                     ),
                                     Text(
-                                      'Shake ${juice.screenShakeIntensity.toStringAsFixed(1)}',
+                                      '${loc.tr('ui.stat.shake')} ${juice.screenShakeIntensity.toStringAsFixed(1)}',
                                       style: const TextStyle(
                                         color: Colors.white70,
                                         fontWeight: FontWeight.w800,
@@ -318,17 +402,39 @@ class _PauseOverlayState extends State<PauseOverlay> {
                                   ],
                                 ),
                                 _Section(
-                                  title: 'Controls',
+                                  title: loc.tr('ui.section.controls'),
                                   color: const Color(0xFF8FA1C7),
-                                  children: const [
-                                    _HelpText('WASD / Arrow: move'),
-                                    _HelpText('Space / Shift: dash'),
-                                    _HelpText('Mouse click: shoot'),
-                                    _HelpText('Tab / B: build summary'),
-                                    _HelpText('Esc: resume / pause'),
-                                    _HelpText('F8: debug warp upstairs'),
+                                  children: [
+                                    _HelpText(loc.tr('ui.help.move')),
+                                    _HelpText(loc.tr('ui.help.dash')),
+                                    _HelpText(loc.tr('ui.help.shoot')),
+                                    _HelpText(loc.tr('ui.help.build')),
+                                    _HelpText(loc.tr('ui.help.pause')),
+                                    _HelpText(loc.tr('ui.help.debug_upstairs')),
                                   ],
                                 ),
+                                OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFFD7B84F),
+                                    side: const BorderSide(
+                                      color: Color(0xFFD7B84F),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 13,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                  onPressed: game.openCodex,
+                                  child: Text(
+                                    loc.tr('ui.title.codex'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
                                 FilledButton(
                                   style: FilledButton.styleFrom(
                                     backgroundColor: const Color(0xFFD7B84F),
@@ -341,9 +447,9 @@ class _PauseOverlayState extends State<PauseOverlay> {
                                     ),
                                   ),
                                   onPressed: game.closePauseMenu,
-                                  child: const Text(
-                                    'Resume',
-                                    style: TextStyle(
+                                  child: Text(
+                                    loc.tr('ui.action.resume'),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
@@ -363,9 +469,9 @@ class _PauseOverlayState extends State<PauseOverlay> {
                                     ),
                                   ),
                                   onPressed: game.abandonRun,
-                                  child: const Text(
-                                    'Abandon Run',
-                                    style: TextStyle(
+                                  child: Text(
+                                    loc.tr('ui.action.abandon'),
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
@@ -413,8 +519,7 @@ class _ModifierStack {
   final GameModifier modifier;
   final int level;
 
-  String get displayName =>
-      level <= 1 ? modifier.name : '${modifier.name} Lv.$level';
+  String get displayName => localizedStackName(modifier, level);
 
   _ModifierStack copyWith({required int level}) {
     return _ModifierStack(modifier: modifier, level: level);
@@ -460,7 +565,8 @@ class _Section extends StatelessWidget {
               const SizedBox(height: 8),
               if (children.isEmpty)
                 Text(
-                  emptyText ?? 'Empty.',
+                  emptyText ??
+                      LocalizationService.instance.tr('ui.empty.default'),
                   style: const TextStyle(
                     color: Colors.white38,
                     fontSize: 13,
@@ -532,7 +638,7 @@ class _ModifierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: '$description\nTags: ${tags.map((tag) => tag.name).join(', ')}',
+      message: '$description\nTags: ${tags.map(localizedTag).join(', ')}',
       child: _InfoCard(
         name: name,
         description: description,
@@ -541,7 +647,8 @@ class _ModifierCard extends StatelessWidget {
           spacing: 4,
           runSpacing: 4,
           children: [
-            for (final tag in tags) _TagChip(label: tag.name, color: color),
+            for (final tag in tags)
+              _TagChip(label: localizedTag(tag), color: color),
           ],
         ),
       ),

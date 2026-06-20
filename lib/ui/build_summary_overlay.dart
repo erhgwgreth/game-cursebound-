@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/game_modifier.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
+import 'localized_game_text.dart';
 
 class BuildSummaryOverlay extends StatelessWidget {
   const BuildSummaryOverlay({required this.game, super.key});
@@ -11,6 +13,7 @@ class BuildSummaryOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = game.gameState;
+    final loc = LocalizationService.instance;
     final blessingStacks = _groupModifiers(state.blessings);
     final curseStacks = _groupModifiers(state.curses);
 
@@ -33,10 +36,10 @@ class BuildSummaryOverlay extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Build Summary',
-                          style: TextStyle(
+                          loc.tr('ui.summary.title'),
+                          style: const TextStyle(
                             color: Color(0xFFD7B84F),
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
@@ -44,7 +47,7 @@ class BuildSummaryOverlay extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Close',
+                        tooltip: loc.tr('ui.common.close'),
                         onPressed: game.closeBuildSummary,
                         icon: const Icon(Icons.close),
                         color: Colors.white70,
@@ -57,22 +60,25 @@ class BuildSummaryOverlay extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       _StatPill(
-                        label: 'HP',
+                        label: loc.tr('ui.stat.hp'),
                         value: '${state.hp}/${state.maxHp}',
                       ),
                       _StatPill(
-                        label: 'Damage',
+                        label: loc.tr('ui.stat.damage'),
                         value: state.stats.attackDamage.toStringAsFixed(0),
                       ),
                       _StatPill(
-                        label: 'Attack Speed',
+                        label: loc.tr('ui.stat.attack_speed'),
                         value: state.stats.attackSpeed.toStringAsFixed(2),
                       ),
                       _StatPill(
-                        label: 'Move',
+                        label: loc.tr('ui.stat.move'),
                         value: state.stats.moveSpeed.toStringAsFixed(0),
                       ),
-                      _StatPill(label: 'Score', value: '${state.score}'),
+                      _StatPill(
+                        label: loc.tr('ui.stat.score'),
+                        value: '${state.score}',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -83,85 +89,97 @@ class BuildSummaryOverlay extends StatelessWidget {
                         children: [
                           if (state.relic != null)
                             _Section(
-                              title: 'Relic',
+                              title: loc.tr('ui.section.relic'),
                               color: const Color(0xFFD7B84F),
                               children: [
                                 _ModifierTile(
-                                  name: state.relic!.name,
-                                  description: state.relic!.description,
+                                  name: localizedModifierName(state.relic!),
+                                  description: localizedModifierDescription(
+                                    state.relic!,
+                                  ),
                                   tags: state.relic!.tags,
                                   color: const Color(0xFFD7B84F),
                                 ),
                               ],
                             ),
                           _Section(
-                            title: 'Boss Boons',
+                            title: loc.tr('ui.section.boss_boons'),
                             color: const Color(0xFFD7B84F),
-                            emptyText: 'No boss boons yet.',
+                            emptyText: loc.tr('ui.empty.boss_boons'),
                             children: [
                               for (final stack in _groupModifiers(
                                 state.bossBoons,
                               ))
                                 _ModifierTile(
                                   name: stack.displayName,
-                                  description: stack.modifier.description,
+                                  description: localizedModifierDescription(
+                                    stack.modifier,
+                                  ),
                                   tags: stack.modifier.tags,
                                   color: const Color(0xFFD7B84F),
                                 ),
                             ],
                           ),
                           _Section(
-                            title: 'Blessings',
+                            title: loc.tr('ui.section.blessings'),
                             color: const Color(0xFFD7B84F),
-                            emptyText: 'No blessings yet.',
+                            emptyText: loc.tr('ui.empty.blessings'),
                             children: [
                               for (final stack in blessingStacks)
                                 _ModifierTile(
                                   name: stack.displayName,
-                                  description: stack.modifier.description,
+                                  description: localizedModifierDescription(
+                                    stack.modifier,
+                                  ),
                                   tags: stack.modifier.tags,
                                   color: const Color(0xFFD7B84F),
                                 ),
                             ],
                           ),
                           _Section(
-                            title: 'Curses',
+                            title: loc.tr('ui.section.curses'),
                             color: const Color(0xFFB11238),
-                            emptyText: 'No curses yet.',
+                            emptyText: loc.tr('ui.empty.curses'),
                             children: [
                               for (final stack in curseStacks)
                                 _ModifierTile(
                                   name: stack.displayName,
-                                  description: stack.modifier.description,
+                                  description: localizedModifierDescription(
+                                    stack.modifier,
+                                  ),
                                   tags: stack.modifier.tags,
                                   color: const Color(0xFFB11238),
                                 ),
                             ],
                           ),
                           _Section(
-                            title: 'Synergies',
+                            title: loc.tr('ui.section.synergies'),
                             color: const Color(0xFFD7B84F),
-                            emptyText: 'No active synergies.',
+                            emptyText: loc.tr('ui.empty.synergies'),
                             children: [
                               for (final synergy in state.buildReport.synergies)
                                 _InfoTile(
-                                  name: synergy.name,
-                                  description: synergy.description,
+                                  name: localizedSynergyName(synergy),
+                                  description: localizedSynergyDescription(
+                                    synergy,
+                                  ),
                                   color: const Color(0xFFD7B84F),
                                 ),
                             ],
                           ),
                           _Section(
-                            title: 'Conflicts',
+                            title: loc.tr('ui.section.conflicts'),
                             color: const Color(0xFFFF5A76),
-                            emptyText: 'No active conflicts.',
+                            emptyText: loc.tr('ui.empty.conflicts'),
                             children: [
                               for (final conflict
                                   in state.buildReport.conflicts)
                                 _InfoTile(
                                   name:
-                                      '${conflict.name} (+${(conflict.scoreMultiplierBonus * 100).round()}% score)',
-                                  description: conflict.description,
+                                      '${localizedConflictName(conflict)} (+${(conflict.scoreMultiplierBonus * 100).round()}% ${loc.tr('ui.stat.score')})',
+                                  description: localizedConflictDescription(
+                                    conflict,
+                                  ),
                                   color: const Color(0xFFFF5A76),
                                 ),
                             ],
@@ -171,10 +189,10 @@ class BuildSummaryOverlay extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'Tab/B: close build summary   Esc: pause',
+                  Text(
+                    loc.tr('ui.help.build_close'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white38,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -209,8 +227,7 @@ class _ModifierStack {
   final GameModifier modifier;
   final int level;
 
-  String get displayName =>
-      level <= 1 ? modifier.name : '${modifier.name} Lv.$level';
+  String get displayName => localizedStackName(modifier, level);
 
   _ModifierStack copyWith({required int level}) {
     return _ModifierStack(modifier: modifier, level: level);
@@ -248,7 +265,7 @@ class _Section extends StatelessWidget {
           const SizedBox(height: 6),
           if (children.isEmpty)
             Text(
-              emptyText ?? 'Empty.',
+              emptyText ?? LocalizationService.instance.tr('ui.empty.default'),
               style: const TextStyle(
                 color: Colors.white38,
                 fontSize: 13,
@@ -279,7 +296,7 @@ class _ModifierTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: '$description\nTags: ${tags.map((tag) => tag.name).join(', ')}',
+      message: '$description\nTags: ${tags.map(localizedTag).join(', ')}',
       child: _InfoTile(
         name: name,
         description: description,
@@ -289,7 +306,7 @@ class _ModifierTile extends StatelessWidget {
           runSpacing: 4,
           children: [
             for (final tag in tags.take(3))
-              _TagChip(label: tag.name, color: color),
+              _TagChip(label: localizedTag(tag), color: color),
           ],
         ),
       ),

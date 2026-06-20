@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/relic.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
+import 'localized_game_text.dart';
 
 class RelicOverlay extends StatelessWidget {
   const RelicOverlay({required this.game, super.key});
@@ -11,6 +13,7 @@ class RelicOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final relics = game.currentRelicChoices;
+    final loc = LocalizationService.instance;
 
     return Material(
       color: Colors.black.withValues(alpha: 0.82),
@@ -22,8 +25,8 @@ class RelicOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Choose a Starting Relic',
+                Text(
+                  loc.tr('ui.relic.title'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFFD7B84F),
@@ -32,8 +35,8 @@ class RelicOverlay extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'A relic shapes the run before the first pact is made.',
+                Text(
+                  loc.tr('ui.relic.subtitle'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
@@ -92,7 +95,7 @@ class _RelicCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                relic.name,
+                localizedModifierName(relic),
                 style: const TextStyle(
                   color: Color(0xFFD7B84F),
                   fontSize: 20,
@@ -101,7 +104,7 @@ class _RelicCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                relic.description,
+                localizedModifierDescription(relic),
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -114,7 +117,8 @@ class _RelicCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  for (final tag in relic.tags) _TagChip(label: tag.name),
+                  for (final tag in relic.tags)
+                    _TagChip(label: localizedTag(tag)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -127,8 +131,8 @@ class _RelicCard extends StatelessWidget {
                   ),
                 ),
                 onPressed: onChoose,
-                child: const Text(
-                  'Begin with this',
+                child: Text(
+                  LocalizationService.instance.tr('ui.relic.begin'),
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),

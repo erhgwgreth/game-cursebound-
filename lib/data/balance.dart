@@ -23,6 +23,7 @@ class Balance {
   static const double baseRoomHeight = 560;
   static const double roomScalePerFloor = 0.045;
   static const double maxRoomScale = 1.65;
+  static const double bossMemoryRoomChance = 0.15;
 
   static double roomScale(int floor) {
     return (1.0 + (floor - 1).clamp(0, 99) * roomScalePerFloor).clamp(
@@ -118,7 +119,10 @@ class Balance {
       RoomType.elite => 30,
       RoomType.challenge => 32,
       RoomType.treasure => 30,
-      RoomType.merchant || RoomType.offering || RoomType.upstairs => 0,
+      RoomType.merchant ||
+      RoomType.offering ||
+      RoomType.upstairs ||
+      RoomType.memory => 0,
       _ => 12,
     };
     final riskBonus =
@@ -126,7 +130,10 @@ class Balance {
         switch (type) {
           RoomType.boss => 3,
           RoomType.miniboss || RoomType.elite || RoomType.challenge => 2,
-          RoomType.merchant || RoomType.offering || RoomType.upstairs => 0,
+          RoomType.merchant ||
+          RoomType.offering ||
+          RoomType.upstairs ||
+          RoomType.memory => 0,
           _ => 1,
         };
     return base + riskBonus;

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/balance.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
+import 'localized_game_text.dart';
 
 class MerchantOverlay extends StatelessWidget {
   const MerchantOverlay({required this.game, super.key});
@@ -18,6 +20,7 @@ class MerchantOverlay extends StatelessWidget {
         final removableCurse = state.curses.isEmpty ? null : state.curses.last;
         final blessingSold = merchant.blessingOfferSold;
         final deeperPactSold = merchant.deeperPactSold;
+        final loc = LocalizationService.instance;
 
         return Material(
           color: Colors.black.withValues(alpha: 0.76),
@@ -39,8 +42,8 @@ class MerchantOverlay extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
-                        'Offering Altar',
+                      Text(
+                        loc.tr('ui.offering.title'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Color(0xFFD7B84F),
@@ -60,7 +63,10 @@ class MerchantOverlay extends StatelessWidget {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        'Essence: ${state.essence}',
+                        loc.tr(
+                          'ui.offering.essence',
+                          params: {'amount': '${state.essence}'},
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
@@ -71,11 +77,19 @@ class MerchantOverlay extends StatelessWidget {
                       const SizedBox(height: 18),
                       _TradeButton(
                         title: removableCurse == null
-                            ? 'Cleanse Curse'
-                            : 'Cleanse Curse: ${removableCurse.name}',
+                            ? loc.tr('ui.offering.cleanse')
+                            : loc.tr(
+                                'ui.offering.cleanse_named',
+                                params: {
+                                  'name': localizedModifierName(removableCurse),
+                                },
+                              ),
                         subtitle: removableCurse == null
-                            ? 'No curse to remove.'
-                            : 'Offer ${Balance.removeCurseCost} Essence. Synergies and conflicts recalculate.',
+                            ? loc.tr('ui.offering.no_curse')
+                            : loc.tr(
+                                'ui.offering.cleanse_cost',
+                                params: {'cost': '${Balance.removeCurseCost}'},
+                              ),
                         enabled:
                             removableCurse != null &&
                             state.essence >= Balance.removeCurseCost,
@@ -86,22 +100,47 @@ class MerchantOverlay extends StatelessWidget {
                       ),
                       _TradeButton(
                         title: deeperPactSold
-                            ? 'Deeper Offering: Spent'
-                            : 'Deeper Offering',
+                            ? loc.tr('ui.offering.deeper_spent')
+                            : loc.tr('ui.offering.deeper'),
                         subtitle: deeperPactSold
-                            ? 'The altar has already accepted this blood.'
-                            : 'Gain ${merchant.deepBlessing.name}, but take ${merchant.deepCurse.name}. Free.',
+                            ? loc.tr('ui.offering.deeper_spent_desc')
+                            : loc.tr(
+                                'ui.offering.deeper_desc',
+                                params: {
+                                  'blessing': localizedModifierName(
+                                    merchant.deepBlessing,
+                                  ),
+                                  'curse': localizedModifierName(
+                                    merchant.deepCurse,
+                                  ),
+                                },
+                              ),
                         enabled: !deeperPactSold,
                         color: const Color(0xFFB11238),
                         onPressed: game.buyDeeperPact,
                       ),
                       _TradeButton(
                         title: blessingSold
-                            ? 'Offering Blessing: Claimed'
-                            : 'Offering Blessing: ${merchant.blessingOffer.blessing.name}',
+                            ? loc.tr('ui.offering.blessing_claimed')
+                            : loc.tr(
+                                'ui.offering.blessing',
+                                params: {
+                                  'name': localizedModifierName(
+                                    merchant.blessingOffer.blessing,
+                                  ),
+                                },
+                              ),
                         subtitle: blessingSold
-                            ? 'This blessing has already been drawn from the altar.'
-                            : '${merchant.blessingOffer.blessing.description} (${merchant.blessingOffer.price} Essence)',
+                            ? loc.tr('ui.offering.blessing_claimed_desc')
+                            : loc.tr(
+                                'ui.offering.blessing_desc',
+                                params: {
+                                  'description': localizedModifierDescription(
+                                    merchant.blessingOffer.blessing,
+                                  ),
+                                  'price': '${merchant.blessingOffer.price}',
+                                },
+                              ),
                         enabled:
                             !blessingSold &&
                             state.essence >= merchant.blessingOffer.price,
@@ -109,9 +148,11 @@ class MerchantOverlay extends StatelessWidget {
                         onPressed: game.buyMerchantBlessing,
                       ),
                       _TradeButton(
-                        title: 'Scatter Ashes',
-                        subtitle:
-                            'Offer ${Balance.merchantRerollCost} Essence to redraw offerings and whispers.',
+                        title: loc.tr('ui.offering.reroll'),
+                        subtitle: loc.tr(
+                          'ui.offering.reroll_desc',
+                          params: {'cost': '${Balance.merchantRerollCost}'},
+                        ),
                         enabled: state.essence >= Balance.merchantRerollCost,
                         color: const Color(0xFF8FA1C7),
                         onPressed: game.rerollMerchant,
@@ -123,7 +164,7 @@ class MerchantOverlay extends StatelessWidget {
                           side: const BorderSide(color: Colors.white24),
                         ),
                         onPressed: game.closeMerchant,
-                        child: const Text('Step Away'),
+                        child: Text(loc.tr('ui.offering.step_away')),
                       ),
                     ],
                   ),

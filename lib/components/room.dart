@@ -9,14 +9,17 @@ import '../data/balance.dart';
 import '../data/dungeon_map.dart';
 import '../data/enemy_data.dart';
 import '../data/room_type.dart';
+import '../data/story_fragment.dart';
 import '../systems/room_manager.dart';
 import 'altar.dart';
 import 'boss.dart';
 import 'enemy.dart';
 import 'miniboss.dart';
+import 'memory_echo.dart';
 import 'offering_altar.dart';
 import 'player.dart';
 import 'stairs.dart';
+import 'story_inscription.dart';
 
 class Room extends PositionComponent with HasGameReference<CurseboundGame> {
   Room({required this.index, required this.node, required this.manager})
@@ -49,6 +52,7 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
     if (_isCleared) {
       openDoors();
       _spawnPersistentRoomObjects();
+      _spawnStoryInscription();
       _spawnPendingReward();
       return;
     }
@@ -72,6 +76,8 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
         _enterOfferingRoom();
       case RoomType.upstairs:
         _enterStairsRoom();
+      case RoomType.memory:
+        _enterMemoryRoom();
       case RoomType.boss:
         _spawnBoss();
     }
@@ -245,6 +251,11 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
     _clearRoom(spawnAltar: false);
   }
 
+  void _enterMemoryRoom() {
+    add(MemoryEcho(position: Vector2.zero()));
+    _clearRoom(spawnAltar: false);
+  }
+
   void _spawnBoss() {
     _aliveEnemies = 1;
     add(
@@ -279,6 +290,7 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
       node.pactRewardPending = true;
       add(Altar(position: Vector2.zero()));
     }
+    _spawnStoryInscription();
     openDoors();
     manager.onRoomCleared();
   }
@@ -304,12 +316,51 @@ class Room extends PositionComponent with HasGameReference<CurseboundGame> {
         !children.whereType<OfferingAltar>().any((altar) => altar.isMounted)) {
       add(OfferingAltar(position: Vector2.zero()));
     }
+    if (type == RoomType.memory &&
+        !children.whereType<MemoryEcho>().any((echo) => echo.isMounted)) {
+      add(MemoryEcho(position: Vector2.zero()));
+    }
+  }
+
+  void _spawnStoryInscription() {
+    if (type != RoomType.memory) {
+      return;
+    }
+    if (children.whereType<StoryInscription>().any((item) => item.isMounted)) {
+      return;
+    }
+
+    final fragments = sinFragmentsForTheme(
+      sinThemeForFloor(manager.currentLevel),
+    );
+    if (fragments.isEmpty) {
+      return;
+    }
+    final random = _roomRandom();
+    final fragment = fragments[random.nextInt(fragments.length)];
+    final x = -scaledRoomSize.x / 2 + wallThickness + 86;
+    final y = -scaledRoomSize.y / 2 + wallThickness + 72;
+    add(StoryInscription(position: Vector2(x, y), fragment: fragment));
   }
 
   void openDoors() {
     for (final door in children.whereType<ExitDoor>()) {
       door.open();
     }
+  }
+
+  void addExitDoor(Direction direction) {
+    if (children.whereType<ExitDoor>().any(
+      (door) => door.direction == direction,
+    )) {
+      return;
+    }
+    final door = ExitDoor.forDirection(
+      direction: direction,
+      isOpen: _isCleared,
+      roomSize: scaledRoomSize,
+    );
+    add(door);
   }
 
   Random _roomRandom() {

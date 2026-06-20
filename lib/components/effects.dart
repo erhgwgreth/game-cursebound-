@@ -1,6 +1,8 @@
 import 'package:flame/components.dart';
 import 'package:flutter/painting.dart';
 
+import '../ui/app_text.dart';
+
 class BurstParticle extends CircleComponent {
   BurstParticle({
     required super.position,
@@ -128,6 +130,7 @@ class FloatingText extends PositionComponent {
       text: TextSpan(
         text: text,
         style: TextStyle(
+          fontFamily: AppText.fontFamily,
           color: color.withValues(alpha: 1 - progress),
           fontSize: 18 * textScale,
           fontWeight: FontWeight.w900,

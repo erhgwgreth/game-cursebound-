@@ -8,6 +8,7 @@ enum RoomType {
   merchant,
   offering,
   upstairs,
+  memory,
   boss,
 }
 
@@ -23,6 +24,7 @@ extension RoomTypeLabel on RoomType {
       RoomType.merchant => 'Offering',
       RoomType.offering => 'Offering',
       RoomType.upstairs => 'Stairs',
+      RoomType.memory => 'Memory',
       RoomType.boss => 'Boss',
     };
   }
@@ -38,6 +40,7 @@ extension RoomTypeLabel on RoomType {
       RoomType.merchant => 'Altar',
       RoomType.offering => 'Altar',
       RoomType.upstairs => 'Stairs',
+      RoomType.memory => 'Memory',
       RoomType.boss => 'Crown',
     };
   }
@@ -53,6 +56,7 @@ extension RoomTypeLabel on RoomType {
       RoomType.merchant => 'Spend Essence at an offering altar.',
       RoomType.offering => 'Spend Essence at an offering altar.',
       RoomType.upstairs => 'A stairway to the next floor.',
+      RoomType.memory => 'A quiet chamber where a lost memory surfaces.',
       RoomType.boss => 'A boss waits at the end of the path.',
     };
   }

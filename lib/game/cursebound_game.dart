@@ -13,6 +13,7 @@ import '../data/boss_boon.dart';
 import '../data/curse.dart';
 import '../data/relic.dart';
 import '../data/room_type.dart';
+import '../data/story_fragment.dart';
 import '../components/player.dart';
 import '../components/projectile.dart';
 import '../components/world_grid.dart';
@@ -20,6 +21,7 @@ import '../components/enemy.dart';
 import '../data/game_modifier.dart';
 import '../systems/audio_controller.dart';
 import '../systems/contract_system.dart';
+import '../systems/localization_service.dart';
 import '../systems/merchant_system.dart';
 import '../systems/meta_progress.dart';
 import '../systems/room_manager.dart';
@@ -46,9 +48,15 @@ class CurseboundGame extends FlameGame
   List<Pact> currentPacts = [];
   List<BossBoon> currentBossBoonChoices = [];
   List<Relic> currentRelicChoices = [];
+  StoryFragment? currentMemoryFragment;
+  StoryFragment? currentInscriptionFragment;
+  StoryFragment? nearbyInscriptionFragment;
   bool isChoosingPact = false;
   bool isChoosingBossBoon = false;
   bool isMerchantOpen = false;
+  bool isMemoryRoomOpen = false;
+  bool isInscriptionOpen = false;
+  bool isCodexOpen = false;
   bool isRouteChoiceOpen = false;
   bool isChoosingRelic = false;
   bool isUnlockScreenOpen = false;
@@ -60,6 +68,7 @@ class CurseboundGame extends FlameGame
   double _attackCooldownLeft = 0;
   int _debugPactIndex = 0;
   int _debugRoomIndex = 0;
+  bool _memoryRoomPending = false;
 
   @override
   Color backgroundColor() => const Color(0xFF08090D);
@@ -89,6 +98,7 @@ class CurseboundGame extends FlameGame
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    await LocalizationService.instance.load();
     await metaProgress.load();
     _configureUnlockedPools();
 
@@ -151,6 +161,13 @@ class CurseboundGame extends FlameGame
       roomManager.debugWarpUp();
       return KeyEventResult.handled;
     }
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.keyE) {
+      final fragment = nearbyInscriptionFragment;
+      if (fragment != null) {
+        openSinInscription(fragment);
+        return KeyEventResult.handled;
+      }
+    }
     if (event is KeyDownEvent &&
         (event.logicalKey == LogicalKeyboardKey.keyB ||
             event.logicalKey == LogicalKeyboardKey.tab)) {
@@ -174,7 +191,10 @@ class CurseboundGame extends FlameGame
     if (!isRunStarted ||
         gameState.isGameOver ||
         isChoosingPact ||
-        isChoosingBossBoon) {
+        isChoosingBossBoon ||
+        isMemoryRoomOpen ||
+        isInscriptionOpen ||
+        isCodexOpen) {
       return;
     }
 
@@ -236,6 +256,9 @@ class CurseboundGame extends FlameGame
     if (!isRunStarted ||
         isChoosingPact ||
         isChoosingBossBoon ||
+        isMemoryRoomOpen ||
+        isInscriptionOpen ||
+        isCodexOpen ||
         isMerchantOpen ||
         isRouteChoiceOpen ||
         isChoosingRelic ||
@@ -321,6 +344,9 @@ class CurseboundGame extends FlameGame
     if (!isRunStarted ||
         isChoosingBossBoon ||
         isChoosingPact ||
+        isMemoryRoomOpen ||
+        isInscriptionOpen ||
+        isCodexOpen ||
         isMerchantOpen ||
         isChoosingRelic ||
         gameState.isGameOver) {
@@ -346,13 +372,123 @@ class CurseboundGame extends FlameGame
     juice.blessingAcquired(player.position);
     overlays.remove('boss_boon');
     isChoosingBossBoon = false;
+    if (_memoryRoomPending) {
+      _memoryRoomPending = false;
+      resumeEngine();
+    } else {
+      resumeEngine();
+    }
+  }
+
+  void onBossDefeated() {
+    _memoryRoomPending = false;
+    openBossBoonChoice();
+  }
+
+  void openMemoryRoom() {
+    if (!isRunStarted ||
+        isMemoryRoomOpen ||
+        isChoosingPact ||
+        isChoosingBossBoon ||
+        isMerchantOpen ||
+        isChoosingRelic ||
+        gameState.isGameOver) {
+      return;
+    }
+
+    _memoryRoomPending = false;
+    final node = roomManager.currentNode;
+    if (node?.type == RoomType.memory && node?.memoryRewardClaimed == true) {
+      currentMemoryFragment = null;
+    } else {
+      currentMemoryFragment = metaProgress.nextMemoryFragment;
+    }
+    if (currentMemoryFragment != null) {
+      if (node?.type == RoomType.memory) {
+        node?.memoryRewardClaimed = true;
+      }
+      metaProgress.revealStoryFragment(currentMemoryFragment!.id);
+    }
+    isMemoryRoomOpen = true;
+    overlays.add('memory_room');
+    pauseEngine();
+  }
+
+  void closeMemoryRoom() {
+    if (!isMemoryRoomOpen) {
+      return;
+    }
+
+    overlays.remove('memory_room');
+    currentMemoryFragment = null;
+    isMemoryRoomOpen = false;
     resumeEngine();
+  }
+
+  void openSinInscription(StoryFragment fragment) {
+    if (!isRunStarted ||
+        isInscriptionOpen ||
+        isChoosingPact ||
+        isChoosingBossBoon ||
+        isMemoryRoomOpen ||
+        isMerchantOpen ||
+        isChoosingRelic ||
+        gameState.isGameOver) {
+      return;
+    }
+
+    currentInscriptionFragment = fragment;
+    metaProgress.revealStoryFragment(fragment.id);
+    isInscriptionOpen = true;
+    overlays.add('inscription');
+    pauseEngine();
+  }
+
+  void closeSinInscription() {
+    if (!isInscriptionOpen) {
+      return;
+    }
+
+    overlays.remove('inscription');
+    currentInscriptionFragment = null;
+    isInscriptionOpen = false;
+    resumeEngine();
+  }
+
+  void setNearbyInscription(StoryFragment? fragment) {
+    nearbyInscriptionFragment = fragment;
+  }
+
+  void openCodex() {
+    if (isCodexOpen || isChoosingRelic || isResultShowing) {
+      return;
+    }
+
+    if (isRunStarted && !isPauseMenuOpen) {
+      isPauseMenuOpen = true;
+      overlays.add('pause');
+      pauseEngine();
+    }
+    isCodexOpen = true;
+    overlays.add('codex');
+  }
+
+  void closeCodex() {
+    if (!isCodexOpen) {
+      return;
+    }
+
+    overlays.remove('codex');
+    isCodexOpen = false;
   }
 
   void openMerchant() {
     if (!isRunStarted ||
         isChoosingPact ||
         isChoosingBossBoon ||
+        isMemoryRoomOpen ||
+        isInscriptionOpen ||
+        isCodexOpen ||
         isMerchantOpen ||
         isRouteChoiceOpen ||
         isChoosingRelic ||
@@ -404,6 +540,9 @@ class CurseboundGame extends FlameGame
         isResultShowing ||
         isChoosingPact ||
         isChoosingBossBoon ||
+        isMemoryRoomOpen ||
+        isInscriptionOpen ||
+        isCodexOpen ||
         isMerchantOpen ||
         isRouteChoiceOpen ||
         isChoosingRelic ||
@@ -431,10 +570,18 @@ class CurseboundGame extends FlameGame
   }
 
   void togglePauseMenu() {
+    if (isCodexOpen) {
+      closeCodex();
+      return;
+    }
+
     if (!isRunStarted ||
         isResultShowing ||
         isChoosingPact ||
         isChoosingBossBoon ||
+        isMemoryRoomOpen ||
+        isInscriptionOpen ||
+        isCodexOpen ||
         isMerchantOpen ||
         isRouteChoiceOpen ||
         isChoosingRelic) {
@@ -460,6 +607,9 @@ class CurseboundGame extends FlameGame
       return;
     }
 
+    if (isCodexOpen) {
+      closeCodex();
+    }
     overlays.remove('pause');
     isPauseMenuOpen = false;
     resumeEngine();
@@ -661,6 +811,7 @@ class CurseboundGame extends FlameGame
       RoomType.challenge,
       RoomType.offering,
       RoomType.upstairs,
+      RoomType.memory,
       RoomType.boss,
     ];
     final type = types[_debugRoomIndex % types.length];
@@ -761,12 +912,22 @@ class CurseboundGame extends FlameGame
     audio.playRunEnd();
     overlays.remove('contract');
     overlays.remove('boss_boon');
+    overlays.remove('memory_room');
+    overlays.remove('inscription');
+    overlays.remove('codex');
     overlays.remove('merchant');
     overlays.remove('route');
     overlays.remove('relic');
     overlays.remove('build');
     overlays.remove('pause');
     isChoosingBossBoon = false;
+    isMemoryRoomOpen = false;
+    isInscriptionOpen = false;
+    isCodexOpen = false;
+    _memoryRoomPending = false;
+    currentMemoryFragment = null;
+    currentInscriptionFragment = null;
+    nearbyInscriptionFragment = null;
     overlays.add('result');
     pauseEngine();
   }

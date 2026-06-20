@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../data/relic.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
 import '../systems/meta_progress.dart';
+import 'localized_game_text.dart';
 
 class UnlockOverlay extends StatefulWidget {
   const UnlockOverlay({required this.game, super.key});
@@ -19,9 +21,13 @@ class _UnlockOverlayState extends State<UnlockOverlay> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: widget.game.metaProgress,
+      animation: Listenable.merge([
+        widget.game.metaProgress,
+        LocalizationService.instance,
+      ]),
       builder: (context, _) {
         final meta = widget.game.metaProgress;
+        final loc = LocalizationService.instance;
 
         return Material(
           color: Colors.black.withValues(alpha: 0.86),
@@ -38,9 +44,9 @@ class _UnlockOverlayState extends State<UnlockOverlay> {
                         tooltip: 'Back',
                       ),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Unlock',
+                          loc.tr('ui.unlock.title'),
                           style: TextStyle(
                             color: Color(0xFFD7B84F),
                             fontSize: 30,
@@ -105,18 +111,21 @@ class _SpecialBoonUnlocks extends StatelessWidget {
 
     return ListView(
       children: [
-        const _SectionHeader(
-          title: 'Special Boons',
-          subtitle:
-              'High-cost meta power. These alter the start of a run with boss-grade passives.',
+        _SectionHeader(
+          title: LocalizationService.instance.tr('ui.unlock.boon_title'),
+          subtitle: LocalizationService.instance.tr('ui.unlock.boon_subtitle'),
         ),
         const SizedBox(height: 12),
         _UnlockTile(
           title: unlock.name,
           subtitle:
-              '${unlock.description} The granted Boon still has tags and works with synergies.',
-          meta: owned ? 'Active: random Boss Boon at run start' : 'Locked',
-          buttonLabel: owned ? 'Owned' : '${unlock.cost}',
+              '${unlock.description} ${LocalizationService.instance.tr('ui.unlock.boon_extra')}',
+          meta: owned
+              ? LocalizationService.instance.tr('ui.unlock.boon_active')
+              : LocalizationService.instance.tr('ui.common.locked'),
+          buttonLabel: owned
+              ? LocalizationService.instance.tr('ui.common.owned')
+              : '${unlock.cost}',
           canBuy: canBuy,
           onBuy: () => game.unlockMeta(unlock.id),
         ),
@@ -141,19 +150,22 @@ class _RevivalUnlocks extends StatelessWidget {
 
     return ListView(
       children: [
-        const _SectionHeader(
-          title: 'Revival',
-          subtitle:
-              'A single safety net, bound by a cost. It prevents one death per run, then gives you another curse.',
+        _SectionHeader(
+          title: LocalizationService.instance.tr('ui.unlock.revival_title'),
+          subtitle: LocalizationService.instance.tr(
+            'ui.unlock.revival_subtitle',
+          ),
         ),
         const SizedBox(height: 12),
         _UnlockTile(
           title: unlock.name,
           subtitle: unlock.description,
           meta: owned
-              ? 'Active: once per run, half HP + random curse'
-              : 'Locked',
-          buttonLabel: owned ? 'Owned' : '${unlock.cost}',
+              ? LocalizationService.instance.tr('ui.unlock.revival_active')
+              : LocalizationService.instance.tr('ui.common.locked'),
+          buttonLabel: owned
+              ? LocalizationService.instance.tr('ui.common.owned')
+              : '${unlock.cost}',
           canBuy: canBuy,
           onBuy: () => game.unlockMeta(unlock.id),
         ),
@@ -168,10 +180,16 @@ class _CategoryTabs extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelected;
 
-  static const labels = ['Stats', 'Relics', 'Boons', 'Revival'];
-
   @override
   Widget build(BuildContext context) {
+    final loc = LocalizationService.instance;
+    final labels = [
+      loc.tr('ui.unlock.stats'),
+      loc.tr('ui.unlock.relics'),
+      loc.tr('ui.unlock.boons'),
+      loc.tr('ui.unlock.revival'),
+    ];
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -204,10 +222,9 @@ class _StatsUnlocks extends StatelessWidget {
     final meta = game.metaProgress;
     return ListView(
       children: [
-        const _SectionHeader(
-          title: 'Stat Upgrades',
-          subtitle:
-              'Small permanent boosts with strict caps. They help, but they do not solve high floors by themselves.',
+        _SectionHeader(
+          title: LocalizationService.instance.tr('ui.unlock.stat_title'),
+          subtitle: LocalizationService.instance.tr('ui.unlock.stat_subtitle'),
         ),
         const SizedBox(height: 12),
         for (final stat in MetaStatUpgrade.values)
@@ -237,7 +254,8 @@ class _StatCard extends StatelessWidget {
     return _UnlockTile(
       title: stat.name,
       subtitle: stat.description,
-      meta: 'Level $current/${stat.maxLevel}',
+      meta:
+          '${LocalizationService.instance.tr('ui.common.level')} $current/${stat.maxLevel}',
       buttonLabel: maxed ? 'MAX' : '$cost',
       canBuy: canBuy,
       onBuy: () => game.unlockMeta(stat.id),
@@ -258,16 +276,17 @@ class _RelicUnlocks extends StatelessWidget {
 
     return ListView(
       children: [
-        const _SectionHeader(
-          title: 'Relic Unlocks',
-          subtitle:
-              'Unlock relics individually, then raise how many relic candidates appear at run start.',
+        _SectionHeader(
+          title: LocalizationService.instance.tr('ui.unlock.relic_title'),
+          subtitle: LocalizationService.instance.tr('ui.unlock.relic_subtitle'),
         ),
         const SizedBox(height: 12),
         _UnlockTile(
-          title: 'Starting Relic Choices',
-          subtitle:
-              'Current: ${meta.relicChoiceCount}. 0 means runs begin without a relic.',
+          title: LocalizationService.instance.tr('ui.unlock.relic_choices'),
+          subtitle: LocalizationService.instance.tr(
+            'ui.unlock.relic_choices_desc',
+            params: {'current': '${meta.relicChoiceCount}'},
+          ),
           meta: '0 -> 1 -> 2 -> 3',
           buttonLabel: choiceMaxed ? 'MAX' : '$choiceCost',
           canBuy: !choiceMaxed && meta.sigils >= choiceCost,
@@ -337,7 +356,7 @@ class _RelicCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    relic.name,
+                    localizedModifierName(relic),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -361,13 +380,17 @@ class _RelicCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  child: Text(unlocked ? 'Owned' : '$cost'),
+                  child: Text(
+                    unlocked
+                        ? LocalizationService.instance.tr('ui.common.owned')
+                        : '$cost',
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
             Text(
-              relic.description,
+              localizedModifierDescription(relic),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -383,7 +406,10 @@ class _RelicCard extends StatelessWidget {
               runSpacing: 4,
               children: [
                 for (final tag in relic.tags)
-                  _TagChip(label: tag.name, color: const Color(0xFFFF5A76)),
+                  _TagChip(
+                    label: localizedTag(tag),
+                    color: const Color(0xFFFF5A76),
+                  ),
               ],
             ),
           ],

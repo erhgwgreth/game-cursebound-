@@ -1,10 +1,10 @@
 {
-  "sigils": 492,
+  "sigils": 540,
   "bestScore": 57030,
   "bestFloor": 65,
-  "totalRuns": 36,
-  "totalKills": 538,
-  "totalCurses": 262,
+  "totalRuns": 40,
+  "totalKills": 610,
+  "totalCurses": 282,
   "unlockedIds": [
     "advanced_blessings",
     "advanced_curses",
@@ -24,6 +24,16 @@
     "start_essence_1",
     "start_hp_1",
     "starting_boon"
+  ],
+  "revealedStoryFragmentIds": [
+    "memory_01_offering_day",
+    "memory_02_sold_by_friends",
+    "memory_03_chosen_sacrifice",
+    "memory_04_first_contract",
+    "memory_05_red_hands",
+    "memory_06_no_surface",
+    "sin_abandonment_01",
+    "sin_abandonment_02"
   ],
   "upgradeLevels": {
     "meta_hp": 5,

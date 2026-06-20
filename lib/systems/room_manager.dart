@@ -120,9 +120,43 @@ class RoomManager extends Component with HasGameReference<CurseboundGame> {
     _currentRoom?.openDoors();
 
     if (node.type == RoomType.boss) {
+      _tryOpenMemoryRoomFromBoss(node);
       game.gameState.addEssence(18 + currentLevel * 4);
       game.gameState.activateBossFavor();
-      game.openBossBoonChoice();
+      game.onBossDefeated();
+    }
+  }
+
+  void _tryOpenMemoryRoomFromBoss(RoomNode bossNode) {
+    if (bossNode.exits.any((direction) {
+      final neighbor = dungeon.neighbor(bossNode, direction);
+      return neighbor?.type == RoomType.memory;
+    })) {
+      return;
+    }
+    if (_random.nextDouble() >= Balance.bossMemoryRoomChance) {
+      debugPrint('Memory room did not open on floor $currentLevel.');
+      return;
+    }
+
+    for (final direction in Direction.values) {
+      final x = bossNode.x + direction.dx;
+      final y = bossNode.y + direction.dy;
+      final key = RoomNode.keyFor(x, y);
+      if (dungeon.nodes.containsKey(key)) {
+        continue;
+      }
+
+      final memoryNode = RoomNode(x: x, y: y, type: RoomType.memory)
+        ..cleared = true
+        ..distanceFromStart = bossNode.distanceFromStart + 1
+        ..exits.add(direction.opposite);
+      dungeon.nodes[key] = memoryNode;
+      bossNode.exits.add(direction);
+      _currentRoom?.addExitDoor(direction);
+      _currentRoom?.openDoors();
+      debugPrint('Memory room opened at floor $currentLevel: $key');
+      return;
     }
   }
 

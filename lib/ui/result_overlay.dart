@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
+import 'localized_game_text.dart';
 
 class ResultOverlay extends StatelessWidget {
   const ResultOverlay({required this.game, super.key});
@@ -10,7 +12,10 @@ class ResultOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = game.gameState;
-    final title = state.isGameOver ? 'You Died' : 'Run Abandoned';
+    final loc = LocalizationService.instance;
+    final title = state.isGameOver
+        ? loc.tr('ui.result.died')
+        : loc.tr('ui.result.abandoned');
 
     return Material(
       color: Colors.black.withValues(alpha: 0.78),
@@ -40,32 +45,52 @@ class ResultOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _ResultRow(
-                    label: 'Highest Floor',
+                    label: loc.tr('ui.result.highest_floor'),
                     value: '${state.maxFloorReached}',
                   ),
-                  _ResultRow(label: 'Ended On Floor', value: '${state.floor}'),
-                  _ResultRow(label: 'Room', value: '${state.room}'),
-                  _ResultRow(label: 'Kills', value: '${state.kills}'),
-                  _ResultRow(label: 'Curses', value: '${state.curses.length}'),
                   _ResultRow(
-                    label: 'Relic',
-                    value: state.relic?.name ?? 'None',
+                    label: loc.tr('ui.result.ended_floor'),
+                    value: '${state.floor}',
                   ),
                   _ResultRow(
-                    label: 'Curse Bonus',
+                    label: loc.tr('ui.result.room'),
+                    value: '${state.room}',
+                  ),
+                  _ResultRow(
+                    label: loc.tr('ui.result.kills'),
+                    value: '${state.kills}',
+                  ),
+                  _ResultRow(
+                    label: loc.tr('ui.result.curses'),
+                    value: '${state.curses.length}',
+                  ),
+                  _ResultRow(
+                    label: loc.tr('ui.result.relic'),
+                    value: state.relic == null
+                        ? loc.tr('ui.result.none')
+                        : localizedModifierName(state.relic!),
+                  ),
+                  _ResultRow(
+                    label: loc.tr('ui.result.curse_bonus'),
                     value: '+${state.curseBonus}',
                   ),
                   _ResultRow(
-                    label: 'Sigils Earned',
+                    label: loc.tr('ui.result.sigils_earned'),
                     value: '+${state.lastSigilsEarned}',
                   ),
                   if (state.lastRunNewBestScore)
-                    const _ResultRow(label: 'Record', value: 'New Best Score'),
+                    _ResultRow(
+                      label: loc.tr('ui.result.record'),
+                      value: loc.tr('ui.result.new_best_score'),
+                    ),
                   if (state.lastRunNewBestFloor)
-                    const _ResultRow(label: 'Depth', value: 'New Best Floor'),
+                    _ResultRow(
+                      label: loc.tr('ui.result.depth'),
+                      value: loc.tr('ui.result.new_best_floor'),
+                    ),
                   const Divider(height: 30, color: Color(0xFF323747)),
                   _ResultRow(
-                    label: 'Score',
+                    label: loc.tr('ui.result.score'),
                     value: '${state.score}',
                     isLarge: true,
                   ),
@@ -80,8 +105,8 @@ class ResultOverlay extends StatelessWidget {
                       ),
                     ),
                     onPressed: game.onRestart,
-                    child: const Text(
-                      'Restart',
+                    child: Text(
+                      loc.tr('ui.result.restart'),
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,

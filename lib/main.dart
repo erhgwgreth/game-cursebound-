@@ -2,11 +2,16 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import 'game/cursebound_game.dart';
+import 'systems/localization_service.dart';
+import 'ui/app_text.dart';
 import 'ui/boss_boon_overlay.dart';
 import 'ui/build_summary_overlay.dart';
+import 'ui/codex_overlay.dart';
 import 'ui/contract_overlay.dart';
 import 'ui/hud.dart';
+import 'ui/inscription_overlay.dart';
 import 'ui/merchant_overlay.dart';
+import 'ui/memory_room_overlay.dart';
 import 'ui/pause_overlay.dart';
 import 'ui/relic_overlay.dart';
 import 'ui/result_overlay.dart';
@@ -23,11 +28,24 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Cursebound',
-      theme: ThemeData.dark(useMaterial3: true),
-      home: const GameScreen(),
+    return AnimatedBuilder(
+      animation: LocalizationService.instance,
+      builder: (context, _) {
+        final loc = LocalizationService.instance;
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: loc.tr('app.title'),
+          theme: ThemeData.dark(useMaterial3: true).copyWith(
+            textTheme: ThemeData.dark(
+              useMaterial3: true,
+            ).textTheme.apply(fontFamily: AppText.fontFamily),
+            primaryTextTheme: ThemeData.dark(
+              useMaterial3: true,
+            ).primaryTextTheme.apply(fontFamily: AppText.fontFamily),
+          ),
+          home: const GameScreen(),
+        );
+      },
     );
   }
 }
@@ -91,9 +109,12 @@ class _GameScreenState extends State<GameScreen> {
           overlayBuilderMap: {
             'boss_boon': (context, game) => BossBoonOverlay(game: game),
             'build': (context, game) => BuildSummaryOverlay(game: game),
+            'codex': (context, game) => CodexOverlay(game: game),
             'hud': (context, game) => HudOverlay(game: game),
+            'inscription': (context, game) => InscriptionOverlay(game: game),
             'contract': (context, game) => ContractOverlay(game: game),
             'merchant': (context, game) => MerchantOverlay(game: game),
+            'memory_room': (context, game) => MemoryRoomOverlay(game: game),
             'pause': (context, game) => PauseOverlay(game: game),
             'relic': (context, game) => RelicOverlay(game: game),
             'route': (context, game) => RouteOverlay(game: game),

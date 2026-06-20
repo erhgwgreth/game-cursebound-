@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../data/game_modifier.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
 import '../systems/contract_system.dart';
 import '../systems/synergy_resolver.dart';
+import 'localized_game_text.dart';
 
 class ContractOverlay extends StatelessWidget {
   const ContractOverlay({required this.game, super.key});
@@ -13,6 +15,7 @@ class ContractOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pacts = game.currentPacts;
+    final loc = LocalizationService.instance;
 
     return Material(
       color: Colors.black.withValues(alpha: 0.72),
@@ -24,8 +27,8 @@ class ContractOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Choose a Pact',
+                Text(
+                  loc.tr('ui.contract.title'),
                   style: TextStyle(
                     color: Color(0xFFD7B84F),
                     fontSize: 30,
@@ -33,8 +36,8 @@ class ContractOverlay extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Every blessing binds a curse. Power has a price.',
+                Text(
+                  loc.tr('ui.contract.subtitle'),
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 16,
@@ -77,6 +80,7 @@ class _PactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = LocalizationService.instance;
     final currentReport = game.gameState.buildReport;
     final predictedReport = game.synergyResolver.evaluate([
       ...game.gameState.modifiers,
@@ -101,18 +105,18 @@ class _PactCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _EffectPanel(
-                label: 'Blessing',
+                label: loc.tr('ui.contract.blessing'),
                 color: const Color(0xFFD7B84F),
-                name: pact.blessing.name,
-                description: pact.blessing.description,
+                name: localizedModifierName(pact.blessing),
+                description: localizedModifierDescription(pact.blessing),
                 tags: pact.blessing.tags,
               ),
               const SizedBox(height: 12),
               _EffectPanel(
-                label: 'Curse',
+                label: loc.tr('ui.contract.curse'),
                 color: const Color(0xFFB11238),
-                name: pact.curse.name,
-                description: pact.curse.description,
+                name: localizedModifierName(pact.curse),
+                description: localizedModifierDescription(pact.curse),
                 tags: pact.curse.tags,
               ),
               if (newSynergies.isNotEmpty || newConflicts.isNotEmpty) ...[
@@ -129,7 +133,7 @@ class _PactCard extends StatelessWidget {
                   ),
                 ),
                 onPressed: onChoose,
-                child: const Text('Bind Pact'),
+                child: Text(loc.tr('ui.contract.bind')),
               ),
             ],
           ),
@@ -215,7 +219,8 @@ class _EffectPanel extends StatelessWidget {
               spacing: 5,
               runSpacing: 5,
               children: [
-                for (final tag in tags) _TagChip(label: tag.name, color: color),
+                for (final tag in tags)
+                  _TagChip(label: localizedTag(tag), color: color),
               ],
             ),
           ],
@@ -233,6 +238,7 @@ class _PreviewPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = LocalizationService.instance;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF08090D),
@@ -246,7 +252,7 @@ class _PreviewPanel extends StatelessWidget {
           children: [
             for (final synergy in synergies)
               Text(
-                'Synergy: ${synergy.name}',
+                '${loc.tr('ui.contract.preview_synergy')}: ${localizedSynergyName(synergy)}',
                 style: const TextStyle(
                   color: Color(0xFFD7B84F),
                   fontSize: 13,
@@ -255,7 +261,7 @@ class _PreviewPanel extends StatelessWidget {
               ),
             for (final conflict in conflicts)
               Text(
-                'Risk: ${conflict.name} (+${(conflict.scoreMultiplierBonus * 100).round()}% score)',
+                '${loc.tr('ui.contract.preview_risk')}: ${localizedConflictName(conflict)} (+${(conflict.scoreMultiplierBonus * 100).round()}% ${loc.tr('ui.stat.score')})',
                 style: const TextStyle(
                   color: Color(0xFFFF5A76),
                   fontSize: 13,

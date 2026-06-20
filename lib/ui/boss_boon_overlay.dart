@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/boss_boon.dart';
 import '../game/cursebound_game.dart';
+import '../systems/localization_service.dart';
+import 'localized_game_text.dart';
 
 class BossBoonOverlay extends StatelessWidget {
   const BossBoonOverlay({required this.game, super.key});
@@ -11,6 +13,7 @@ class BossBoonOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final boons = game.currentBossBoonChoices;
+    final loc = LocalizationService.instance;
 
     return Material(
       color: Colors.black.withValues(alpha: 0.76),
@@ -22,8 +25,8 @@ class BossBoonOverlay extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Claim a Boss Boon',
+                Text(
+                  loc.tr('ui.boon.title'),
                   style: TextStyle(
                     color: Color(0xFFD7B84F),
                     fontSize: 30,
@@ -31,8 +34,8 @@ class BossBoonOverlay extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'A power taken from a fallen guardian. No curse is bound to this reward.',
+                Text(
+                  loc.tr('ui.boon.subtitle'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
@@ -84,8 +87,8 @@ class _BoonCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Boss Boon',
+              Text(
+                LocalizationService.instance.tr('ui.boon.label'),
                 style: TextStyle(
                   color: Color(0xFFD7B84F),
                   fontSize: 12,
@@ -94,7 +97,7 @@ class _BoonCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                boon.name,
+                localizedModifierName(boon),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -103,7 +106,7 @@ class _BoonCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                boon.description,
+                localizedModifierDescription(boon),
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -117,7 +120,10 @@ class _BoonCard extends StatelessWidget {
                 runSpacing: 5,
                 children: [
                   for (final tag in boon.tags)
-                    _TagChip(label: tag.name, color: const Color(0xFFD7B84F)),
+                    _TagChip(
+                      label: localizedTag(tag),
+                      color: const Color(0xFFD7B84F),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -130,8 +136,8 @@ class _BoonCard extends StatelessWidget {
                   ),
                 ),
                 onPressed: onChoose,
-                child: const Text(
-                  'Claim Power',
+                child: Text(
+                  LocalizationService.instance.tr('ui.boon.claim'),
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),

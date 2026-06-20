@@ -42,6 +42,7 @@ class RoomNode {
   bool cleared = false;
   bool visited = false;
   bool pactRewardPending = false;
+  bool memoryRewardClaimed = false;
   int distanceFromStart = 0;
   final Set<Direction> exits = {};
 
@@ -52,7 +53,8 @@ class RoomNode {
       RoomType.start ||
       RoomType.merchant ||
       RoomType.offering ||
-      RoomType.upstairs => false,
+      RoomType.upstairs ||
+      RoomType.memory => false,
       _ => true,
     };
   }
