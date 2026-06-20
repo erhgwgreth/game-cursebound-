@@ -1,0 +1,34 @@
+{
+  "sigils": 492,
+  "bestScore": 57030,
+  "bestFloor": 65,
+  "totalRuns": 36,
+  "totalKills": 538,
+  "totalCurses": 262,
+  "unlockedIds": [
+    "advanced_blessings",
+    "advanced_curses",
+    "advanced_relics",
+    "deep_relics",
+    "movement_relics",
+    "one_revival",
+    "relic:broken_clock",
+    "relic:calamity_seal",
+    "relic:contract_seal",
+    "relic:cursed_crown",
+    "relic:full_moon_cup",
+    "relic:hungry_chalice",
+    "relic:rift_eye",
+    "relic:runaway_heart",
+    "relic:void_hand",
+    "start_essence_1",
+    "start_hp_1",
+    "starting_boon"
+  ],
+  "upgradeLevels": {
+    "meta_hp": 5,
+    "meta_attack": 5,
+    "meta_move": 4,
+    "relic_choices": 3
+  }
+}
