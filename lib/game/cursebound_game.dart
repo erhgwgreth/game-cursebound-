@@ -161,6 +161,10 @@ class CurseboundGame extends FlameGame
       roomManager.debugWarpUp();
       return KeyEventResult.handled;
     }
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f9) {
+      player.toggleHitboxDebug();
+      return KeyEventResult.handled;
+    }
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.keyE) {
       final fragment = nearbyInscriptionFragment;
       if (fragment != null) {
@@ -215,6 +219,7 @@ class CurseboundGame extends FlameGame
     if (direction.isZero()) {
       return;
     }
+    player.faceTarget(target);
 
     final stats = gameState.stats;
     _notifyAttack();

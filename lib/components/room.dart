@@ -463,6 +463,9 @@ class ExitDoor extends RectangleComponent
   bool _isOpen;
   bool _isTransitioning = false;
 
+  static const double activationDepth = 104;
+  static const double activationWidth = 148;
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -472,6 +475,16 @@ class ExitDoor extends RectangleComponent
   void open() {
     _isOpen = true;
     paint.color = const Color(0xFFD7B84F);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    if (_isOpen && !_isTransitioning && _isPlayerInActivationZone()) {
+      _isTransitioning = true;
+      game.roomManager.tryMove(direction);
+    }
   }
 
   @override
@@ -485,5 +498,18 @@ class ExitDoor extends RectangleComponent
       _isTransitioning = true;
       game.roomManager.tryMove(direction);
     }
+  }
+
+  bool _isPlayerInActivationZone() {
+    final playerPosition = game.player.position;
+    final dx = (playerPosition.x - position.x).abs();
+    final dy = (playerPosition.y - position.y).abs();
+
+    return switch (direction) {
+      Direction.up ||
+      Direction.down => dx <= activationWidth / 2 && dy <= activationDepth,
+      Direction.left ||
+      Direction.right => dx <= activationDepth && dy <= activationWidth / 2,
+    };
   }
 }

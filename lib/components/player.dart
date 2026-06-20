@@ -11,22 +11,30 @@ import 'fire_patch.dart';
 import 'miniboss.dart';
 import '../game/cursebound_game.dart';
 
-class Player extends RectangleComponent
+class Player extends SpriteComponent
     with KeyboardHandler, CollisionCallbacks, HasGameReference<CurseboundGame> {
   Player({required super.position})
-    : super(
-        size: Vector2.all(32),
-        anchor: Anchor.center,
-        paint: Paint()..color = const Color(0xFFFFFFFF),
-      );
+    : super(size: Vector2.all(renderSize), anchor: Anchor.center);
 
   static const double invincibleDuration = 0.2;
+  static const String stage1SpritePath = 'player_stage1.png';
+  static const String stage2SpritePath = 'player_stage2.png';
+  static const String stage3SpritePath = 'player_stage3.png';
+  static const int stage2CurseThreshold = 9;
+  static const int stage3CurseThreshold = 16;
+  static const double renderSize = 96;
+  static const double hitboxRadius = 18;
+  static final Vector2 hitboxCenterOffset = Vector2(0, 6);
+  static const double attackFacingDuration = 0.3;
+  static const double rotationLerpSpeed = 14;
 
   final Set<LogicalKeyboardKey> _pressedKeys = {};
+  final Paint _fallbackPaint = Paint()..color = const Color(0xFFFFFFFF);
+  final Map<int, Sprite?> _spritesByStage = {};
+  late final CircleHitbox _bodyHitbox;
   Vector2 _lastMoveDirection = Vector2(1, 0);
   double _dashCooldownLeft = 0;
   double _invincibleLeft = 0;
-  double _pulseTime = 0;
   double _speedBuffLeft = 0;
   double _speedBuffMultiplier = 1;
   double _slowLeft = 0;
@@ -34,6 +42,9 @@ class Player extends RectangleComponent
   double _flashLeft = 0;
   double _auraTickCooldownLeft = 0;
   double _aegisCooldownLeft = 0;
+  double _attackFacingLeft = 0;
+  double _targetAngle = 0;
+  int _currentSpriteStage = 0;
   bool _aegisReady = false;
   Vector2 _knockbackVelocity = Vector2.zero();
   bool _isMoving = false;
@@ -45,7 +56,14 @@ class Player extends RectangleComponent
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    add(RectangleHitbox());
+    await _loadSprites();
+    _applySpriteForCurseCount(game.gameState.curses.length);
+    _bodyHitbox = CircleHitbox(
+      radius: hitboxRadius,
+      position: size / 2 + hitboxCenterOffset,
+      anchor: Anchor.center,
+    );
+    add(_bodyHitbox);
   }
 
   @override
@@ -68,13 +86,13 @@ class Player extends RectangleComponent
   void update(double dt) {
     super.update(dt);
 
-    _pulseTime += dt;
     _dashCooldownLeft = math.max(0, _dashCooldownLeft - dt);
     _invincibleLeft = math.max(0, _invincibleLeft - dt);
     _speedBuffLeft = math.max(0, _speedBuffLeft - dt);
     _slowLeft = math.max(0, _slowLeft - dt);
     _flashLeft = math.max(0, _flashLeft - dt);
     _auraTickCooldownLeft = math.max(0, _auraTickCooldownLeft - dt);
+    _attackFacingLeft = math.max(0, _attackFacingLeft - dt);
     _updateAegis(dt);
     if (_speedBuffLeft <= 0) {
       _speedBuffMultiplier = 1;
@@ -101,66 +119,91 @@ class Player extends RectangleComponent
           _speedBuffMultiplier *
           _slowMultiplier *
           dt;
+      if (_attackFacingLeft <= 0) {
+        _targetAngle = _angleForDirection(_lastMoveDirection);
+      }
     }
+    _updateFacing(dt);
+    _applySpriteForCurseCount(game.gameState.curses.length);
     _updateAura();
 
     opacity = _invincibleLeft > 0 ? 0.55 : 1;
-    paint.color = _flashLeft > 0
+    _fallbackPaint.color = _flashLeft > 0
         ? const Color(0xFFFF5A76)
         : const Color(0xFFFFFFFF);
   }
 
+  Future<void> _loadSprites() async {
+    _spritesByStage[1] = await _loadSpriteSafely(stage1SpritePath);
+    _spritesByStage[2] = await _loadSpriteSafely(stage2SpritePath);
+    _spritesByStage[3] = await _loadSpriteSafely(stage3SpritePath);
+  }
+
+  Future<Sprite?> _loadSpriteSafely(String path) async {
+    try {
+      return await game.loadSprite(path);
+    } on Object catch (error) {
+      debugPrint('Player sprite load failed ($path): $error');
+      return null;
+    }
+  }
+
+  void _applySpriteForCurseCount(int curseCount) {
+    final nextStage = _stageForCurseCount(curseCount);
+    if (_currentSpriteStage == nextStage) {
+      return;
+    }
+
+    _currentSpriteStage = nextStage;
+    sprite = _spritesByStage[nextStage];
+  }
+
+  int _stageForCurseCount(int curseCount) {
+    if (curseCount >= stage3CurseThreshold) {
+      return 3;
+    }
+    if (curseCount >= stage2CurseThreshold) {
+      return 2;
+    }
+    return 1;
+  }
+
+  void faceTarget(Vector2 target) {
+    final direction = target - position;
+    if (direction.isZero()) {
+      return;
+    }
+
+    _targetAngle = _angleForDirection(direction.normalized());
+    _attackFacingLeft = attackFacingDuration;
+  }
+
+  void toggleHitboxDebug() {
+    _bodyHitbox.debugMode = !_bodyHitbox.debugMode;
+    debugPrint('Player hitbox debug: ${_bodyHitbox.debugMode}');
+  }
+
   @override
   void render(Canvas canvas) {
-    final curseCount = game.gameState.curses.length;
-    final curseStage = (curseCount / 8).clamp(0.0, 1.0);
-
-    if (curseCount > 0) {
-      final pulse = (math.sin(_pulseTime * 6) + 1) * 0.5;
-      final auraAlpha = (0.08 + curseCount * 0.03 + pulse * 0.07).clamp(
-        0.08,
-        0.38,
-      );
-      final auraPaint = Paint()
-        ..color = const Color(0xFFB11238).withValues(alpha: auraAlpha);
-      canvas.drawRect(
-        Rect.fromLTWH(
-          -8 - curseStage * 8,
-          -8 - curseStage * 8,
-          size.x + 16 + curseStage * 16,
-          size.y + 16 + curseStage * 16,
-        ),
-        auraPaint,
-      );
+    if (sprite == null) {
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), _fallbackPaint);
+    } else {
+      super.render(canvas);
     }
+  }
 
-    super.render(canvas);
+  double _angleForDirection(Vector2 direction) {
+    return math.atan2(-direction.x, direction.y);
+  }
 
-    if (curseCount > 0) {
-      final strokePaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = (2 + curseCount * 0.42).clamp(2, 6).toDouble()
-        ..color = const Color(0xFFB11238).withValues(alpha: 0.85);
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), strokePaint);
+  void _updateFacing(double dt) {
+    final delta = _shortestAngleDelta(angle, _targetAngle);
+    final t = (dt * rotationLerpSpeed).clamp(0.0, 1.0);
+    angle += delta * t;
+  }
 
-      if (curseCount >= 3) {
-        final crackPaint = Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5
-          ..color = const Color(0xFFFF5A76).withValues(alpha: 0.45);
-        canvas
-          ..drawLine(
-            Offset(size.x * 0.28, size.y * 0.1),
-            Offset(size.x * 0.55, size.y * 0.48),
-            crackPaint,
-          )
-          ..drawLine(
-            Offset(size.x * 0.55, size.y * 0.48),
-            Offset(size.x * 0.42, size.y * 0.9),
-            crackPaint,
-          );
-      }
-    }
+  double _shortestAngleDelta(double from, double to) {
+    return math.atan2(math.sin(to - from), math.cos(to - from));
   }
 
   Vector2 _movementDirection() {
