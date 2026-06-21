@@ -11,6 +11,7 @@ import '../data/balance.dart';
 import '../data/enemy_data.dart';
 import '../data/game_modifier.dart';
 import '../game/cursebound_game.dart';
+import '../systems/effect_sprite_cache.dart';
 import 'offscreen_threat.dart';
 import 'room.dart';
 
@@ -777,15 +778,24 @@ class BossProjectile extends CircleComponent
     this.damage = 12,
     Color color = const Color(0xFFB11238),
   }) : _direction = direction.normalized(),
-       super(radius: 7, anchor: Anchor.center, paint: Paint()..color = color);
+       super(
+         radius: 7,
+         anchor: Anchor.center,
+         priority: 80,
+         paint: Paint()..color = color,
+       );
+
+  static const double spriteSize = 36;
 
   final Vector2 _direction;
   final int damage;
   double _lifeLeft = 2.2;
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _sprite = await EffectSpriteCache.load(game, 'enemy_bolt.png');
     add(CircleHitbox());
   }
 
@@ -812,13 +822,47 @@ class BossProjectile extends CircleComponent
       removeFromParent();
     }
   }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    canvas.save();
+    canvas.translate(radius, radius);
+    canvas.rotate(_angleForDirection(_direction));
+    sprite.render(
+      canvas,
+      position: Vector2.all(-spriteSize / 2),
+      size: Vector2.all(spriteSize),
+    );
+    canvas.restore();
+  }
+
+  double _angleForDirection(Vector2 direction) {
+    return math.atan2(direction.y, direction.x) + math.pi / 2;
+  }
 }
 
-class _BossRicochetTelegraph extends PositionComponent with OffscreenThreat {
-  _BossRicochetTelegraph({required this.segments}) : super(priority: -2);
+class _BossRicochetTelegraph extends PositionComponent
+    with HasGameReference<CurseboundGame>, OffscreenThreat {
+  _BossRicochetTelegraph({required this.segments}) : super(priority: -5);
 
   final List<({Vector2 start, Vector2 end})> segments;
   double _lifeLeft = 0.72;
+  Sprite? _lineSprite;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    _lineSprite = await EffectSpriteCache.load(
+      game,
+      'telegraph_line_long.png',
+    );
+  }
 
   @override
   double get threatUrgency => 0.9;
@@ -853,6 +897,9 @@ class _BossRicochetTelegraph extends PositionComponent with OffscreenThreat {
       ..strokeCap = StrokeCap.round;
 
     for (final segment in segments) {
+      if (_renderLineSprite(canvas, segment, 0.42 + progress * 0.2)) {
+        continue;
+      }
       final start = Offset(segment.start.x, segment.start.y);
       final end = Offset(segment.end.x, segment.end.y);
       canvas
@@ -860,9 +907,41 @@ class _BossRicochetTelegraph extends PositionComponent with OffscreenThreat {
         ..drawLine(start, end, outline);
     }
   }
+
+  bool _renderLineSprite(
+    Canvas canvas,
+    ({Vector2 start, Vector2 end}) segment,
+    double alpha,
+  ) {
+    final sprite = _lineSprite;
+    if (sprite == null) {
+      return false;
+    }
+
+    final delta = segment.end - segment.start;
+    final length = delta.length;
+    if (length <= 0) {
+      return true;
+    }
+
+    canvas
+      ..save()
+      ..translate(segment.start.x, segment.start.y)
+      ..rotate(math.atan2(delta.y, delta.x));
+    sprite.render(
+      canvas,
+      position: Vector2(0, -22),
+      size: Vector2(length, 44),
+      overridePaint: Paint()
+        ..color = Color.fromRGBO(255, 255, 255, alpha.clamp(0, 0.62)),
+    );
+    canvas.restore();
+    return true;
+  }
 }
 
-class _BossPulseTelegraph extends CircleComponent with OffscreenThreat {
+class _BossPulseTelegraph extends CircleComponent
+    with HasGameReference<CurseboundGame>, OffscreenThreat {
   _BossPulseTelegraph({required super.position, required double radius})
     : super(
         radius: radius,
@@ -872,6 +951,13 @@ class _BossPulseTelegraph extends CircleComponent with OffscreenThreat {
       );
 
   double _lifeLeft = 0.55;
+  Sprite? _circleSprite;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    _circleSprite = await EffectSpriteCache.load(game, 'telegraph_circle.png');
+  }
 
   @override
   void update(double dt) {
@@ -885,7 +971,19 @@ class _BossPulseTelegraph extends CircleComponent with OffscreenThreat {
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
+    final sprite = _circleSprite;
+    if (sprite != null) {
+      final alpha = (0.18 + opacity * 0.42).clamp(0, 0.62).toDouble();
+      sprite.render(
+        canvas,
+        position: Vector2.zero(),
+        size: Vector2.all(radius * 2),
+        overridePaint: Paint()
+          ..color = Color.fromRGBO(255, 255, 255, alpha),
+      );
+    } else {
+      super.render(canvas);
+    }
     final outline = Paint()
       ..color = const Color(0xFFFF5A76).withValues(alpha: 0.82)
       ..style = PaintingStyle.stroke
@@ -906,6 +1004,13 @@ class _BossArtilleryTelegraph extends PositionComponent
   final double radius;
   final int damage;
   double _timeLeft = 0.72;
+  Sprite? _circleSprite;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    _circleSprite = await EffectSpriteCache.load(game, 'telegraph_circle.png');
+  }
 
   @override
   double get threatUrgency =>
@@ -943,10 +1048,29 @@ class _BossArtilleryTelegraph extends PositionComponent
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     for (final target in targets) {
+      if (_renderCircleSprite(canvas, target, 0.26 + progress * 0.34)) {
+        continue;
+      }
       canvas
         ..drawCircle(Offset(target.x, target.y), radius, paint)
         ..drawCircle(Offset(target.x, target.y), radius, outline);
     }
+  }
+
+  bool _renderCircleSprite(Canvas canvas, Vector2 target, double alpha) {
+    final sprite = _circleSprite;
+    if (sprite == null) {
+      return false;
+    }
+
+    sprite.render(
+      canvas,
+      position: Vector2(target.x - radius, target.y - radius),
+      size: Vector2.all(radius * 2),
+      overridePaint: Paint()
+        ..color = Color.fromRGBO(255, 255, 255, alpha.clamp(0, 0.62)),
+    );
+    return true;
   }
 }
 

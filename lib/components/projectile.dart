@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flame/collisions.dart';
@@ -8,6 +9,7 @@ import 'enemy.dart';
 import 'fire_patch.dart';
 import 'miniboss.dart';
 import '../game/cursebound_game.dart';
+import '../systems/effect_sprite_cache.dart';
 
 class Projectile extends CircleComponent
     with CollisionCallbacks, HasGameReference<CurseboundGame> {
@@ -26,10 +28,12 @@ class Projectile extends CircleComponent
        super(
          radius: radius,
          anchor: Anchor.center,
+         priority: 80,
          paint: Paint()..color = const Color(0xFFE7D27B),
        );
 
   static const double maxLifetime = 1.4;
+  static const double spriteSize = 34;
 
   final Vector2 _direction;
   final int damage;
@@ -43,10 +47,12 @@ class Projectile extends CircleComponent
   double _lifeLeft = maxLifetime;
   double _fireTrailCooldownLeft = 0;
   late int _remainingPierce = pierce;
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _sprite = await EffectSpriteCache.load(game, 'player_bolt.png');
     add(CircleHitbox());
   }
 
@@ -170,5 +176,28 @@ class Projectile extends CircleComponent
         radius: radius * 0.9,
       ),
     );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    canvas.save();
+    canvas.translate(radius, radius);
+    canvas.rotate(_angleForDirection(_direction));
+    sprite.render(
+      canvas,
+      position: Vector2.all(-spriteSize / 2),
+      size: Vector2.all(spriteSize),
+    );
+    canvas.restore();
+  }
+
+  double _angleForDirection(Vector2 direction) {
+    return math.atan2(direction.y, direction.x) + math.pi / 2;
   }
 }

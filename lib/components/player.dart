@@ -235,13 +235,15 @@ class Player extends SpriteComponent
     }
 
     final start = position.clone();
-    position += _lastMoveDirection * game.gameState.stats.dashDistance;
+    final dashDirection = _lastMoveDirection.clone();
+    position += dashDirection * game.gameState.stats.dashDistance;
+    final end = position.clone();
     if (game.gameState.stats.dashLeavesFire) {
-      _leaveDashFire(start, position.clone());
+      _leaveDashFire(start, end);
     }
     _dashCooldownLeft = game.gameState.stats.dashCooldown;
     _invincibleLeft = game.gameState.stats.dashInvincibleDuration;
-    game.juice.dash(position);
+    game.juice.dash(start: start, end: end, direction: dashDirection);
   }
 
   bool _isDashKey(LogicalKeyboardKey key) {

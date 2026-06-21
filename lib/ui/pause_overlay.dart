@@ -374,6 +374,25 @@ class _PauseOverlayState extends State<PauseOverlay> {
                                       },
                                     ),
                                     Text(
+                                      '${loc.tr('ui.settings.bgm_volume')} ${(game.bgm.volume * 100).round()}%',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    Slider(
+                                      min: 0,
+                                      max: 1,
+                                      divisions: 10,
+                                      value: game.bgm.volume,
+                                      activeColor: const Color(0xFFD7B84F),
+                                      onChanged: (value) {
+                                        setState(
+                                          () => game.bgm.setVolume(value),
+                                        );
+                                      },
+                                    ),
+                                    Text(
                                       '${loc.tr('ui.stat.shake')} ${juice.screenShakeIntensity.toStringAsFixed(1)}',
                                       style: const TextStyle(
                                         color: Colors.white70,

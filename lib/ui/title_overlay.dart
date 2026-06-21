@@ -24,86 +24,121 @@ class TitleOverlay extends StatelessWidget {
         final loc = LocalizationService.instance;
 
         return Material(
-          color: Colors.black.withValues(alpha: 0.82),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      loc.tr('app.title'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFFD7B84F),
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 10,
-                      runSpacing: 8,
+          color: Colors.black,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/images/title_bg.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const ColoredBox(color: Colors.black);
+                },
+              ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xAA000000),
+                      Color(0x66000000),
+                      Color(0xCC000000),
+                    ],
+                  ),
+                ),
+              ),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _MetaPill(
-                          label: loc.tr('ui.meta.sigils'),
-                          value: '${meta.sigils}',
+                        Text(
+                          loc.tr('app.title'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFD7B84F),
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                            shadows: const [
+                              Shadow(color: Colors.black, blurRadius: 14),
+                            ],
+                          ),
                         ),
-                        _MetaPill(
-                          label: loc.tr('ui.meta.best_floor'),
-                          value: '${meta.bestFloor}',
+                        const SizedBox(height: 18),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: [
+                            _MetaPill(
+                              label: loc.tr('ui.meta.sigils'),
+                              value: '${meta.sigils}',
+                            ),
+                            _MetaPill(
+                              label: loc.tr('ui.meta.best_floor'),
+                              value: '${meta.bestFloor}',
+                            ),
+                            _MetaPill(
+                              label: loc.tr('ui.meta.runs'),
+                              value: '${meta.totalRuns}',
+                            ),
+                          ],
                         ),
-                        _MetaPill(
-                          label: loc.tr('ui.meta.runs'),
-                          value: '${meta.totalRuns}',
+                        const SizedBox(height: 28),
+                        _MenuButton(
+                          label: meta.isLoaded
+                              ? loc.tr('ui.title.start')
+                              : loc.tr('ui.title.loading'),
+                          primary: true,
+                          onPressed: meta.isLoaded
+                              ? game.openRelicChoice
+                              : null,
+                        ),
+                        const SizedBox(height: 10),
+                        _MenuButton(
+                          label: loc.tr('ui.title.unlock'),
+                          onPressed: meta.isLoaded
+                              ? game.openUnlockScreen
+                              : null,
+                        ),
+                        const SizedBox(height: 10),
+                        _MenuButton(
+                          label: loc.tr('ui.title.codex'),
+                          onPressed: meta.isLoaded ? game.openCodex : null,
+                        ),
+                        const SizedBox(height: 10),
+                        _MenuButton(
+                          label: loc.tr('ui.title.settings'),
+                          onPressed: () => _showSettings(context),
+                        ),
+                        const SizedBox(height: 10),
+                        _MenuButton(
+                          label: loc.tr('ui.title.quit'),
+                          onPressed: _quitApp,
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          loc.tr('ui.title.debug_sigils'),
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            shadows: const [
+                              Shadow(color: Colors.black, blurRadius: 8),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 28),
-                    _MenuButton(
-                      label: meta.isLoaded
-                          ? loc.tr('ui.title.start')
-                          : loc.tr('ui.title.loading'),
-                      primary: true,
-                      onPressed: meta.isLoaded ? game.openRelicChoice : null,
-                    ),
-                    const SizedBox(height: 10),
-                    _MenuButton(
-                      label: loc.tr('ui.title.unlock'),
-                      onPressed: meta.isLoaded ? game.openUnlockScreen : null,
-                    ),
-                    const SizedBox(height: 10),
-                    _MenuButton(
-                      label: loc.tr('ui.title.codex'),
-                      onPressed: meta.isLoaded ? game.openCodex : null,
-                    ),
-                    const SizedBox(height: 10),
-                    _MenuButton(
-                      label: loc.tr('ui.title.settings'),
-                      onPressed: () => _showSettings(context),
-                    ),
-                    const SizedBox(height: 10),
-                    _MenuButton(
-                      label: loc.tr('ui.title.quit'),
-                      onPressed: _quitApp,
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      loc.tr('ui.title.debug_sigils'),
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -169,6 +204,20 @@ class TitleOverlay extends StatelessWidget {
                         },
                       ),
                     ],
+                  ),
+                  Text(
+                    '${LocalizationService.instance.tr('ui.settings.bgm_volume')} ${(game.bgm.volume * 100).round()}%',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  Slider(
+                    min: 0,
+                    max: 1,
+                    divisions: 10,
+                    value: game.bgm.volume,
+                    activeColor: const Color(0xFFD7B84F),
+                    onChanged: (value) {
+                      setDialogState(() => game.bgm.setVolume(value));
+                    },
                   ),
                   SwitchListTile(
                     value: game.juice.settings.enabled,

@@ -232,6 +232,9 @@ class RoomManager extends Component with HasGameReference<CurseboundGame> {
     game.world.add(room);
 
     game.player.position = _spawnPositionFor(entryDirection, node.type);
+    game.updateCameraBounds(room.bounds);
+    game.juice.updateCamera(0);
+    game.playBgmForCurrentRoom();
   }
 
   Vector2 _spawnPositionFor(Direction? entryDirection, RoomType type) {

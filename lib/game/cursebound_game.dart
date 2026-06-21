@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
+import 'package:flame/experimental.dart' as flame_geometry;
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +22,7 @@ import '../components/world_grid.dart';
 import '../components/enemy.dart';
 import '../data/game_modifier.dart';
 import '../systems/audio_controller.dart';
+import '../systems/bgm_manager.dart';
 import '../systems/contract_system.dart';
 import '../systems/localization_service.dart';
 import '../systems/merchant_system.dart';
@@ -33,8 +36,12 @@ class CurseboundGame extends FlameGame
     with HasKeyboardHandlerComponents, HasCollisionDetection, TapCallbacks {
   CurseboundGame({required this.onRestart});
 
+  static const double cameraWidth = 960;
+  static const double cameraHeight = 540;
+
   final VoidCallback onRestart;
   final AudioController audio = AudioController();
+  final BgmManager bgm = BgmManager();
   final GameState gameState = GameState();
   final ContractSystem contractSystem = ContractSystem();
   final MetaProgress metaProgress = MetaProgress();
@@ -69,6 +76,7 @@ class CurseboundGame extends FlameGame
   int _debugPactIndex = 0;
   int _debugRoomIndex = 0;
   bool _memoryRoomPending = false;
+  Rect? _cameraWorldBounds;
 
   @override
   Color backgroundColor() => const Color(0xFF08090D);
@@ -100,12 +108,13 @@ class CurseboundGame extends FlameGame
     await super.onLoad();
     await LocalizationService.instance.load();
     await metaProgress.load();
+    await bgm.initialize();
     _configureUnlockedPools();
 
     camera = CameraComponent.withFixedResolution(
       world: world,
-      width: 960,
-      height: 540,
+      width: cameraWidth,
+      height: cameraHeight,
     );
     camera.viewfinder.anchor = Anchor.center;
     addAll([world, camera]);
@@ -117,7 +126,50 @@ class CurseboundGame extends FlameGame
     roomManager = RoomManager();
     add(roomManager);
     overlays.add('title');
+    unawaited(bgm.playTrack(BgmTrack.title));
     pauseEngine();
+  }
+
+  void updateCameraBounds(Rect bounds) {
+    _cameraWorldBounds = bounds;
+    camera.setBounds(
+      flame_geometry.Rectangle.fromRect(bounds),
+      considerViewport: true,
+    );
+    camera.viewfinder.position = clampCameraPosition(camera.viewfinder.position);
+  }
+
+  Vector2 clampCameraPosition(Vector2 target) {
+    final bounds = _cameraWorldBounds;
+    if (bounds == null) {
+      return target;
+    }
+
+    final zoom = camera.viewfinder.zoom;
+    final halfWidth = cameraWidth / zoom / 2;
+    final halfHeight = cameraHeight / zoom / 2;
+    final center = bounds.center;
+    final clamped = target.clone();
+
+    if (bounds.width <= halfWidth * 2) {
+      clamped.x = center.dx;
+    } else {
+      clamped.x = clamped.x.clamp(
+        bounds.left + halfWidth,
+        bounds.right - halfWidth,
+      );
+    }
+
+    if (bounds.height <= halfHeight * 2) {
+      clamped.y = center.dy;
+    } else {
+      clamped.y = clamped.y.clamp(
+        bounds.top + halfHeight,
+        bounds.bottom - halfHeight,
+      );
+    }
+
+    return clamped;
   }
 
   @override
@@ -415,6 +467,7 @@ class CurseboundGame extends FlameGame
       metaProgress.revealStoryFragment(currentMemoryFragment!.id);
     }
     isMemoryRoomOpen = true;
+    unawaited(bgm.playTrack(BgmTrack.memory));
     overlays.add('memory_room');
     pauseEngine();
   }
@@ -887,6 +940,7 @@ class CurseboundGame extends FlameGame
       return;
     }
 
+    bgm.resetBossRotation();
     gameState.applyMetaBonuses(metaProgress);
     _grantStartingBossBoon();
     gameState.rebuildStats(player);
@@ -896,6 +950,7 @@ class CurseboundGame extends FlameGame
     overlays.remove('relic');
     overlays.remove('unlock');
     overlays.add('hud');
+    playBgmForCurrentRoom();
     resumeEngine();
   }
 
@@ -915,6 +970,7 @@ class CurseboundGame extends FlameGame
     );
     gameState.setMetaReward(reward);
     audio.playRunEnd();
+    unawaited(bgm.playTrack(BgmTrack.death));
     overlays.remove('contract');
     overlays.remove('boss_boon');
     overlays.remove('memory_room');
@@ -935,6 +991,36 @@ class CurseboundGame extends FlameGame
     nearbyInscriptionFragment = null;
     overlays.add('result');
     pauseEngine();
+  }
+
+  void playBgmForCurrentRoom() {
+    if (!isRunStarted || isResultShowing) {
+      return;
+    }
+
+    final node = roomManager.currentNode;
+    if (node == null) {
+      unawaited(bgm.playTrack(BgmTrack.combat));
+      return;
+    }
+
+    if (node.type == RoomType.boss && !node.cleared) {
+      unawaited(bgm.playBossBgm());
+      return;
+    }
+
+    if (node.type == RoomType.memory) {
+      unawaited(bgm.playTrack(BgmTrack.memory));
+      return;
+    }
+
+    unawaited(bgm.playTrack(BgmTrack.combat));
+  }
+
+  @override
+  void onRemove() {
+    bgm.dispose();
+    super.onRemove();
   }
 
   bool _tryRevive() {

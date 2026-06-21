@@ -4,6 +4,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
 import '../game/cursebound_game.dart';
+import '../systems/effect_sprite_cache.dart';
 import 'boss.dart';
 import 'enemy.dart';
 import 'miniboss.dart';
@@ -26,10 +27,12 @@ class FirePatch extends CircleComponent
   final int damage;
   final double lifeTime;
   late double _lifeLeft = lifeTime;
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _sprite = await EffectSpriteCache.load(game, 'dash_bust_effect.png');
     add(CircleHitbox()..collisionType = CollisionType.passive);
   }
 
@@ -46,6 +49,25 @@ class FirePatch extends CircleComponent
     if (_lifeLeft <= 0) {
       removeFromParent();
     }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    final progress = (1 - _lifeLeft / lifeTime).clamp(0, 1).toDouble();
+    final drawSize = radius * 2.65;
+    sprite.render(
+      canvas,
+      position: Vector2.all(radius - drawSize / 2),
+      size: Vector2.all(drawSize),
+      overridePaint: Paint()
+        ..color = Color.fromRGBO(255, 255, 255, 0.62 * (1 - progress)),
+    );
   }
 
   @override

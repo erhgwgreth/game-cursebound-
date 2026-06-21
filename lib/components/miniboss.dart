@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../data/balance.dart';
 import '../game/cursebound_game.dart';
+import '../systems/effect_sprite_cache.dart';
 import 'offscreen_threat.dart';
 
 class MiniBoss extends CircleComponent
@@ -212,15 +213,20 @@ class MiniBossProjectile extends CircleComponent
       super(
         radius: 6,
         anchor: Anchor.center,
+        priority: 80,
         paint: Paint()..color = const Color(0xFFD7B84F),
       );
 
+  static const double spriteSize = 34;
+
   final Vector2 _direction;
   double _lifeLeft = 1.6;
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _sprite = await EffectSpriteCache.load(game, 'enemy_bolt.png');
     add(CircleHitbox());
   }
 
@@ -245,5 +251,28 @@ class MiniBossProjectile extends CircleComponent
       game.player.takeDamage(11, source: position.clone());
       removeFromParent();
     }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    canvas.save();
+    canvas.translate(radius, radius);
+    canvas.rotate(_angleForDirection(_direction));
+    sprite.render(
+      canvas,
+      position: Vector2.all(-spriteSize / 2),
+      size: Vector2.all(spriteSize),
+    );
+    canvas.restore();
+  }
+
+  double _angleForDirection(Vector2 direction) {
+    return math.atan2(direction.y, direction.x) + math.pi / 2;
   }
 }

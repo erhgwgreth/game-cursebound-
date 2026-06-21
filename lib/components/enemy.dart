@@ -9,6 +9,7 @@ import 'offscreen_threat.dart';
 import 'room.dart';
 import '../data/enemy_data.dart';
 import '../game/cursebound_game.dart';
+import '../systems/effect_sprite_cache.dart';
 
 enum EnemyState { idle, chase, telegraph, attack, recover }
 
@@ -1056,16 +1057,21 @@ class EnemyProjectile extends CircleComponent
        super(
          radius: 6,
          anchor: Anchor.center,
+         priority: 80,
          paint: Paint()..color = const Color(0xFFB11238),
        );
+
+  static const double spriteSize = 34;
 
   final Vector2 _direction;
   final int damage;
   double _lifeLeft = 2.0;
+  Sprite? _sprite;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _sprite = await EffectSpriteCache.load(game, 'enemy_bolt.png');
     add(CircleHitbox());
   }
 
@@ -1090,6 +1096,29 @@ class EnemyProjectile extends CircleComponent
       game.player.takeDamage(damage, source: position.clone());
       removeFromParent();
     }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final sprite = _sprite;
+    if (sprite == null) {
+      super.render(canvas);
+      return;
+    }
+
+    canvas.save();
+    canvas.translate(radius, radius);
+    canvas.rotate(_angleForDirection(_direction));
+    sprite.render(
+      canvas,
+      position: Vector2.all(-spriteSize / 2),
+      size: Vector2.all(spriteSize),
+    );
+    canvas.restore();
+  }
+
+  double _angleForDirection(Vector2 direction) {
+    return math.atan2(direction.y, direction.x) + math.pi / 2;
   }
 }
 
@@ -1140,7 +1169,8 @@ class _EnemyHazard extends CircleComponent
   }
 }
 
-class _EnemyTelegraph extends PositionComponent with OffscreenThreat {
+class _EnemyTelegraph extends PositionComponent
+    with HasGameReference<CurseboundGame>, OffscreenThreat {
   _EnemyTelegraph.line({
     required super.position,
     required Vector2 direction,
@@ -1174,6 +1204,28 @@ class _EnemyTelegraph extends PositionComponent with OffscreenThreat {
   final double radius;
   final List<Vector2> positions;
   double progress = 0;
+  Sprite? _circleSprite;
+  Sprite? _lineSprite;
+  Sprite? _lineLongSprite;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    switch (shape) {
+      case _TelegraphShape.line:
+        _lineSprite = await EffectSpriteCache.load(game, 'telegraph_line.png');
+        _lineLongSprite = await EffectSpriteCache.load(
+          game,
+          'telegraph_line_long.png',
+        );
+      case _TelegraphShape.circle:
+      case _TelegraphShape.multiCircle:
+        _circleSprite = await EffectSpriteCache.load(
+          game,
+          'telegraph_circle.png',
+        );
+    }
+  }
 
   @override
   double get threatUrgency => 0.78 + progress * 0.14;
@@ -1199,6 +1251,9 @@ class _EnemyTelegraph extends PositionComponent with OffscreenThreat {
 
     switch (shape) {
       case _TelegraphShape.line:
+        if (_renderLineSprite(canvas, alpha)) {
+          return;
+        }
         final angle = math.atan2(_direction.y, _direction.x);
         canvas
           ..save()
@@ -1220,15 +1275,69 @@ class _EnemyTelegraph extends PositionComponent with OffscreenThreat {
         canvas.drawPath(arrowPath, paint);
         canvas.restore();
       case _TelegraphShape.circle:
+        if (_renderCircleSprite(canvas, Offset.zero, radius, alpha)) {
+          return;
+        }
         canvas
           ..drawCircle(Offset.zero, radius, paint)
           ..drawCircle(Offset.zero, radius, outlinePaint);
       case _TelegraphShape.multiCircle:
         for (final position in positions) {
+          if (_renderCircleSprite(
+            canvas,
+            Offset(position.x, position.y),
+            radius,
+            alpha,
+          )) {
+            continue;
+          }
           canvas
             ..drawCircle(Offset(position.x, position.y), radius, paint)
             ..drawCircle(Offset(position.x, position.y), radius, outlinePaint);
         }
     }
+  }
+
+  bool _renderLineSprite(Canvas canvas, double alpha) {
+    final sprite = length > 300 ? _lineLongSprite ?? _lineSprite : _lineSprite;
+    if (sprite == null) {
+      return false;
+    }
+
+    final angle = math.atan2(_direction.y, _direction.x);
+    canvas
+      ..save()
+      ..rotate(angle);
+    sprite.render(
+      canvas,
+      position: Vector2(0, -telegraphWidth),
+      size: Vector2(length, telegraphWidth * 2),
+      overridePaint: Paint()
+        ..color = Color.fromRGBO(255, 255, 255, alpha.clamp(0, 0.62)),
+    );
+    canvas.restore();
+    return true;
+  }
+
+  bool _renderCircleSprite(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double alpha,
+  ) {
+    final sprite = _circleSprite;
+    if (sprite == null) {
+      return false;
+    }
+
+    final size = radius * 2;
+    sprite.render(
+      canvas,
+      position: Vector2(center.dx - radius, center.dy - radius),
+      size: Vector2.all(size),
+      overridePaint: Paint()
+        ..color = Color.fromRGBO(255, 255, 255, alpha.clamp(0, 0.62)),
+    );
+    return true;
   }
 }

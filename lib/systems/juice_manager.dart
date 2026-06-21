@@ -56,7 +56,9 @@ class JuiceManager {
       }
     }
 
-    game.camera.viewfinder.position = game.player.position + offset;
+    game.camera.viewfinder.position = game.clampCameraPosition(
+      game.player.position + offset,
+    );
   }
 
   void enemyHit(
@@ -156,6 +158,7 @@ class JuiceManager {
     }
 
     _shake(strength: 12, duration: 0.22);
+    game.world.add(ExplosionAnimationEffect(position: position.clone()));
     _spawnSpark(position.clone(), color: const Color(0xFFB11238), radius: 20);
     _spawnBurst(
       position.clone(),
@@ -189,19 +192,43 @@ class JuiceManager {
     );
   }
 
-  void dash(Vector2 position) {
+  void dash({
+    required Vector2 start,
+    required Vector2 end,
+    required Vector2 direction,
+  }) {
     if (!settings.enabled) {
       return;
     }
 
     game.world.add(
-      Afterimage(
-        position: position.clone(),
-        size: game.player.size.clone(),
-        color: const Color(0xFFEDEDED),
+      OneShotSpriteEffect(
+        position: start.clone(),
+        assetName: 'dash_bust_effect.png',
+        startSize: 66,
+        endSize: 112,
+        life: 0.22,
+        startOpacity: 0.9,
+        priority: 35,
       ),
     );
-    _spawnSpark(position.clone(), color: const Color(0xFFEDEDED), radius: 10);
+    final dashAngle = atan2(direction.y, direction.x) + pi / 2;
+    final trailPositions = [start, (start + end) / 2, end];
+    for (var i = 0; i < trailPositions.length; i += 1) {
+      game.world.add(
+        OneShotSpriteEffect(
+          position: trailPositions[i].clone(),
+          assetName: 'dash_effect.png',
+          startSize: 82 - i * 8,
+          endSize: 102 - i * 6,
+          life: 0.24 - i * 0.035,
+          startOpacity: 0.72 - i * 0.12,
+          effectAngle: dashAngle,
+          priority: 34,
+        ),
+      );
+    }
+    _spawnSpark(start.clone(), color: const Color(0xFFEDEDED), radius: 10);
   }
 
   void contractAccepted(Vector2 position) {
@@ -230,6 +257,16 @@ class JuiceManager {
       return;
     }
 
+    game.world.add(
+      OneShotSpriteEffect(
+        position: position.clone(),
+        assetName: 'blessing_glow.png',
+        startSize: 72,
+        endSize: 126,
+        life: 0.42,
+        startOpacity: 0.88,
+      ),
+    );
     _spawnBurst(
       position.clone(),
       color: const Color(0xFFD7B84F),
