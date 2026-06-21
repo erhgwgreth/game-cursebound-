@@ -420,16 +420,6 @@ class MetaProgress extends ChangeNotifier {
     );
   }
 
-  void debugGrantSigils(int amount) {
-    if (amount <= 0) {
-      return;
-    }
-
-    sigils += amount;
-    notifyListeners();
-    save();
-  }
-
   Future<bool> revealStoryFragment(String id) async {
     if (!storyFragmentTable.any((fragment) => fragment.id == id)) {
       return false;

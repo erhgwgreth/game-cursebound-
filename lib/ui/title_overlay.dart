@@ -121,18 +121,6 @@ class TitleOverlay extends StatelessWidget {
                           label: loc.tr('ui.title.quit'),
                           onPressed: _quitApp,
                         ),
-                        const SizedBox(height: 18),
-                        Text(
-                          loc.tr('ui.title.debug_sigils'),
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            shadows: const [
-                              Shadow(color: Colors.black, blurRadius: 8),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),

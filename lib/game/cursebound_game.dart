@@ -73,8 +73,6 @@ class CurseboundGame extends FlameGame
   bool isResultShowing = false;
   double runElapsedSeconds = 0;
   double _attackCooldownLeft = 0;
-  int _debugPactIndex = 0;
-  int _debugRoomIndex = 0;
   bool _memoryRoomPending = false;
   Rect? _cameraWorldBounds;
 
@@ -177,46 +175,6 @@ class CurseboundGame extends FlameGame
     KeyEvent event,
     Set<LogicalKeyboardKey> keysPressed,
   ) {
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f1) {
-      _grantDebugPact();
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f2) {
-      gameState.addEssence(50);
-      debugPrint('Debug essence granted: +50');
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f3) {
-      openMerchant();
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f4) {
-      _debugLoadNextRoom();
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f5) {
-      juice.settings.screenShakeEnabled = !juice.settings.screenShakeEnabled;
-      debugPrint('Screen shake: ${juice.settings.screenShakeEnabled}');
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f6) {
-      juice.settings.enabled = !juice.settings.enabled;
-      debugPrint('Juice enabled: ${juice.settings.enabled}');
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f7) {
-      metaProgress.debugGrantSigils(10);
-      debugPrint('Debug sigils granted: +10');
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f8) {
-      roomManager.debugWarpUp();
-      return KeyEventResult.handled;
-    }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f9) {
-      player.toggleHitboxDebug();
-      return KeyEventResult.handled;
-    }
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.keyE) {
       final fragment = nearbyInscriptionFragment;
       if (fragment != null) {
@@ -853,54 +811,6 @@ class CurseboundGame extends FlameGame
     resolveBuild();
     juice.curseAcquired(player.position);
     debugPrint('Challenge curse accepted: ${curse.name}');
-  }
-
-  void _debugLoadNextRoom() {
-    if (!isRunStarted || isResultShowing) {
-      return;
-    }
-
-    final types = [
-      RoomType.start,
-      RoomType.normal,
-      RoomType.treasure,
-      RoomType.miniboss,
-      RoomType.elite,
-      RoomType.challenge,
-      RoomType.offering,
-      RoomType.upstairs,
-      RoomType.memory,
-      RoomType.boss,
-    ];
-    final type = types[_debugRoomIndex % types.length];
-    _debugRoomIndex += 1;
-    roomManager.debugLoadNextRoom(type);
-    debugPrint('Debug room loaded: ${type.label}');
-  }
-
-  void _grantDebugPact() {
-    if (!isRunStarted || isResultShowing) {
-      return;
-    }
-
-    final debugPacts = [
-      (blessingId: 'sure_strike', curseId: 'frail_flesh'),
-      (blessingId: 'fleet_body', curseId: 'heavy_lungs'),
-      (blessingId: 'blood_spark', curseId: 'brittle_bolts'),
-      (blessingId: 'sharpened_will', curseId: 'thin_blood'),
-      (blessingId: 'quick_hands', curseId: 'open_wounds'),
-    ];
-
-    final debugPact = debugPacts[_debugPactIndex % debugPacts.length];
-    _debugPactIndex += 1;
-
-    final blessing = blessingTable.firstWhere(
-      (item) => item.id == debugPact.blessingId,
-    );
-    final curse = curseTable.firstWhere((item) => item.id == debugPact.curseId);
-    gameState.addPact(blessing, curse, player);
-    resolveBuild();
-    debugPrint('Debug pact granted: ${blessing.name} + ${curse.name}');
   }
 
   double _attackDamageMultiplier() {

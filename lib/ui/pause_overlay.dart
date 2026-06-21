@@ -429,7 +429,6 @@ class _PauseOverlayState extends State<PauseOverlay> {
                                     _HelpText(loc.tr('ui.help.shoot')),
                                     _HelpText(loc.tr('ui.help.build')),
                                     _HelpText(loc.tr('ui.help.pause')),
-                                    _HelpText(loc.tr('ui.help.debug_upstairs')),
                                   ],
                                 ),
                                 OutlinedButton(

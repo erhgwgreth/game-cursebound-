@@ -178,11 +178,6 @@ class Player extends SpriteComponent
     _attackFacingLeft = attackFacingDuration;
   }
 
-  void toggleHitboxDebug() {
-    _bodyHitbox.debugMode = !_bodyHitbox.debugMode;
-    debugPrint('Player hitbox debug: ${_bodyHitbox.debugMode}');
-  }
-
   @override
   void render(Canvas canvas) {
     if (sprite == null) {

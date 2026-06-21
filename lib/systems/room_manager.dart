@@ -83,20 +83,16 @@ class RoomManager extends Component with HasGameReference<CurseboundGame> {
   }
 
   void chooseNextRoom(RoomType type) {
-    debugLoadNextRoom(type);
+    loadChosenRoom(type);
   }
 
-  void debugLoadNextRoom(RoomType type) {
+  void loadChosenRoom(RoomType type) {
     final node = RoomNode(x: 99 + _roomVisitCount, y: 0, type: type)
       ..cleared = false
       ..visited = false
       ..exits.add(Direction.left);
     dungeon.nodes[node.key] = node;
     _loadNode(node, entryDirection: Direction.left);
-  }
-
-  void debugWarpUp() {
-    goUpstairs();
   }
 
   void onRoomCleared() {

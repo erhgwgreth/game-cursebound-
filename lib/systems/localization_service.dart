@@ -82,7 +82,6 @@ class LocalizationService extends ChangeNotifier {
       'ui.title.codex': 'Codex',
       'ui.title.settings': 'Settings',
       'ui.title.quit': 'Quit',
-      'ui.title.debug_sigils': 'Debug: F7 grants +10 Sigils.',
       'ui.meta.sigils': 'Sigils',
       'ui.meta.best_floor': 'Best Floor',
       'ui.meta.runs': 'Runs',
@@ -241,7 +240,6 @@ class LocalizationService extends ChangeNotifier {
       'ui.help.shoot': 'Mouse click: shoot',
       'ui.help.build': 'Tab / B: build summary',
       'ui.help.pause': 'Esc: resume / pause',
-      'ui.help.debug_upstairs': 'F8: debug warp upstairs',
       'ui.help.build_close': 'Tab/B: close build summary   Esc: pause',
       'synergy.glass_cannon.name': 'Glass Cannon',
       'synergy.glass_cannon.desc': 'Lower HP increases attack damage.',
@@ -434,7 +432,6 @@ class LocalizationService extends ChangeNotifier {
       'ui.title.codex': '회상록',
       'ui.title.settings': '\uC124\uC815',
       'ui.title.quit': '\uC885\uB8CC',
-      'ui.title.debug_sigils': '\uB514\uBC84\uADF8: F7\uB85C \uAC01\uC778 +10.',
       'ui.meta.sigils': '\uAC01\uC778',
       'ui.meta.best_floor': '\uCD5C\uACE0 \uCE35',
       'ui.meta.runs': '\uB7F0',
@@ -585,8 +582,6 @@ class LocalizationService extends ChangeNotifier {
       'ui.help.shoot': '\uB9C8\uC6B0\uC2A4 \uD074\uB9AD: \uC0AC\uACA9',
       'ui.help.build': 'Tab / B: \uBE4C\uB4DC \uC694\uC57D',
       'ui.help.pause': 'Esc: \uC7AC\uAC1C / \uC77C\uC2DC\uC815\uC9C0',
-      'ui.help.debug_upstairs':
-          'F8: \uB514\uBC84\uADF8 \uC704\uCE35 \uC774\uB3D9',
       'ui.help.build_close': 'Tab/B: 닫기   Esc: 일시정지',
       'synergy.glass_cannon.name': '\uC720\uB9AC \uB300\uD3EC',
       'synergy.glass_cannon.desc':
